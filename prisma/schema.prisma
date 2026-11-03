@@ -1,0 +1,402 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum Role {
+  BUYER
+  SUPPLIER
+  ADMIN
+  VERIFIER
+}
+
+enum CompanyType {
+  MANUFACTURER
+  DISTRIBUTOR
+  EXPORTER
+  BUYER
+}
+
+enum VerificationStatus {
+  BASIC
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+enum ProductStatus {
+  DRAFT
+  ACTIVE
+  PENDING_REVIEW
+  HIDDEN
+  REJECTED
+}
+
+enum RfqStatus {
+  DRAFT
+  OPEN
+  QUOTING
+  NEGOTIATING
+  CLOSED
+  CANCELLED
+}
+
+enum QuoteStatus {
+  SENT
+  VIEWED
+  SHORTLISTED
+  REVISION_REQUESTED
+  REJECTED
+  ACCEPTED
+}
+
+enum PlanCode {
+  FREE
+  PRO
+  PREMIUM
+  ENTERPRISE
+}
+
+enum AccountStatus {
+  ACTIVE
+  SUSPENDED
+  BANNED
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  resetToken   String?
+  resetTokenExpiry DateTime?
+  name         String?
+  role         Role     @default(BUYER)
+  locale       String   @default("id")
+  emailVerifiedAt DateTime?
+  verifyToken     String?   @unique
+  verifyTokenExpires DateTime?
+  status        AccountStatus @default(ACTIVE)
+  suspendReason String?
+  createdAt    DateTime @default(now())
+  companyId    String?
+  company      Company? @relation(fields: [companyId], references: [id])
+  rfqs         Rfq[]    @relation("RfqCreator")
+  quotes       Quote[]  @relation("QuoteCreator")
+  productEvents ProductEvent[]
+}
+
+model Company {
+  id                 String             @id @default(cuid())
+  name               String
+  slug               String             @unique
+  type               CompanyType        @default(MANUFACTURER)
+  description        String?
+  province           String?
+  city               String?
+  address            String?
+  phone              String?
+  exportCapability   Boolean            @default(false)
+  verificationStatus VerificationStatus @default(BASIC)
+  logoUrl            String?            
+  verifiedAt         DateTime?
+  plan               PlanCode           @default(FREE)
+  planStartedAt      DateTime?          
+  planExpiresAt      DateTime?          
+  createdAt          DateTime           @default(now())
+  users              User[]
+  products           Product[]
+  profileViews       ProductEvent[] @relation("CompanyProfileViews")
+  rfqs               Rfq[]              @relation("RfqBuyer")
+  quotes             Quote[]            @relation("QuoteSupplier")
+  buyerChats        Conversation[] @relation("BuyerChats")
+  supplierChats     Conversation[] @relation("SupplierChats")
+  website          String?
+  yearEstablished  Int?
+  subscriptionRequests SubscriptionRequest[]
+  sponsoredRequests SponsoredRequest[]
+  verificationRequests VerificationRequest[]
+  banners            Banner[]
+}
+
+model Category {
+  id       String    @id @default(cuid())
+  nameId   String
+  nameEn   String
+  slug     String    @unique
+  featured Boolean   @default(false)
+  products Product[]
+}
+
+model Product {
+  id             String        @id @default(cuid())
+  companyId      String
+  company        Company       @relation(fields: [companyId], references: [id])
+  categoryId     String
+  category       Category      @relation(fields: [categoryId], references: [id])
+  titleId        String
+  titleEn        String
+  slug           String        @unique
+  description    String?
+  moq            Int           @default(1)
+  moqUnit        String        @default("pcs")
+  priceMin       Int?
+  priceMax       Int?
+  currency       String        @default("IDR")
+  status         ProductStatus @default(ACTIVE)
+  images         ProductImage[]
+  createdAt      DateTime      @default(now())
+  discountLabel  String?
+  discountUntil  DateTime?
+  isCategoryVerified Boolean @default(false)
+  conversations  Conversation[]
+
+  // Sponsorship fields
+  sponsoredAt       DateTime?
+  sponsoredUntil    DateTime?
+  sponsoredRequests SponsoredRequest[]
+  productEvents     ProductEvent[]
+  
+
+  @@index([sponsoredUntil])
+  @@index([status, createdAt])
+  @@index([companyId, status])
+}
+
+model Rfq {
+  id             String    @id @default(cuid())
+  buyerCompanyId String
+  buyerCompany   Company   @relation("RfqBuyer", fields: [buyerCompanyId], references: [id])
+  createdById    String
+  createdBy      User      @relation("RfqCreator", fields: [createdById], references: [id])
+  categoryId     String
+  title          String
+  description    String
+  quantity       Int
+  quantityUnit   String    @default("pcs")
+  targetPrice    Int?
+  targetPriceMax Int?
+  deliveryCity   String?
+  deadlineAt     DateTime
+  verifiedOnly   Boolean   @default(false)
+  status         RfqStatus @default(OPEN)
+  closedAt       DateTime? 
+  createdAt      DateTime  @default(now())
+  quotes         Quote[]
+  images         RfqImage[]
+}
+
+model Quote {
+  id                String      @id @default(cuid())
+  rfqId             String
+  rfq               Rfq         @relation(fields: [rfqId], references: [id])
+  supplierCompanyId String
+  supplierCompany   Company     @relation("QuoteSupplier", fields: [supplierCompanyId], references: [id])
+  createdById       String
+  createdBy         User        @relation("QuoteCreator", fields: [createdById], references: [id])
+  unitPrice         Int
+  totalPrice        Int
+  currency          String      @default("IDR")
+  deliveryDays      Int
+  validUntil        DateTime
+  notes             String?
+  status            QuoteStatus @default(SENT)
+  createdAt         DateTime    @default(now())
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  actorId   String?
+  action    String
+  entity    String
+  entityId  String?
+  metadata  Json?
+  createdAt DateTime @default(now())
+}
+
+model ProductImage {
+  id        String  @id @default(cuid())
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  url       String
+  createdAt DateTime @default(now())
+}
+
+model Conversation {
+  id                String    @id @default(cuid())
+  productId         String?
+  product           Product?  @relation(fields: [productId], references: [id])
+  buyerCompanyId    String
+  supplierCompanyId String
+  createdAt         DateTime  @default(now())
+  
+  // Relasi ke Message
+  messages          Message[]
+  
+  // Relasi (opsional) untuk mengambil nama perusahaan
+  buyerCompany      Company   @relation("BuyerChats", fields: [buyerCompanyId], references: [id])
+  supplierCompany   Company   @relation("SupplierChats", fields: [supplierCompanyId], references: [id])
+}
+
+model Message {
+  id             String       @id @default(cuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  senderId       String
+  senderName     String
+  content        String
+  fileUrl        String?      
+   isRead         Boolean     @default(false)
+  createdAt      DateTime     @default(now())
+}
+
+model SubscriptionRequest {
+  id            String   @id @default(cuid())
+  companyId     String
+  requestedPlan String
+  paymentProofUrl String?
+  status        String   @default("PENDING") // PENDING, APPROVED, REJECTED
+  createdAt     DateTime @default(now())
+  company       Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+}
+
+model RfqImage {
+  id        String   @id @default(cuid())
+  rfqId     String
+  rfq       Rfq      @relation(fields: [rfqId], references: [id], onDelete: Cascade)
+  url       String
+  createdAt DateTime @default(now())
+}
+
+model SponsoredRequest {
+  id              String           @id @default(cuid())
+  productId       String
+  product         Product          @relation(fields: [productId], references: [id], onDelete: Cascade)
+  companyId       String
+  company         Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  tier            SponsorshipTier  @default(STANDARD)
+  durationDays    Int
+  price           Int
+  paymentProofUrl String?
+  promoLabel      String? 
+  status          SponsoredStatus  @default(PENDING)
+
+  createdAt       DateTime         @default(now())
+  approvedAt      DateTime?
+  rejectedAt      DateTime?
+  rejectedReason  String?
+  cancelledAt     DateTime?
+  expiresAt       DateTime?
+  expiredAt       DateTime?
+
+  approvedById    String?
+  rejectedById    String?
+
+  impressions     Int              @default(0)
+  views           Int              @default(0)
+  clicks          Int              @default(0)
+  chatInitiations Int              @default(0)
+  quotes          Int              @default(0)
+
+  @@index([status, expiresAt])
+  @@index([companyId, status])
+  @@index([productId, status])
+  @@index([companyId, createdAt])
+}
+
+enum SponsoredStatus {
+  PENDING
+  APPROVED
+  EXPIRED
+  REJECTED
+  CANCELLED
+}
+
+enum SponsorshipTier {
+  STANDARD
+  CATEGORY
+  HOMEPAGE
+}
+
+enum ProductEventType {
+  IMPRESSION
+  VIEW
+  CLICK
+  CHAT
+  PROFILE_VIEW
+  QUOTE
+}
+
+model ProductEvent {
+  id         String            @id @default(cuid())
+  productId  String?
+  product    Product?          @relation(fields: [productId], references: [id], onDelete: Cascade)
+  supplierCompanyId String?  
+  supplierCompany   Company?   @relation("CompanyProfileViews", fields: [supplierCompanyId], references: [id], onDelete: Cascade)
+  eventType  ProductEventType
+  source     String?
+  userId     String?
+  user       User?             @relation(fields: [userId], references: [id])
+  sessionId  String?
+  metadata   Json?
+  createdAt  DateTime          @default(now())
+
+  @@index([productId, eventType, createdAt])
+  @@index([supplierCompanyId, eventType, createdAt])
+  @@index([eventType, createdAt])
+}
+
+model VerificationRequest {
+  id              String             @id @default(cuid())
+  companyId       String
+  company         Company            @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  
+  documentData    Json?   
+  status          VerificationStatus @default(PENDING)
+  rejectionReason String?
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+}
+
+// 2. GANTI MODEL BANNER MENJADI SEPERTI INI
+model Banner {
+  id              String   @id @default(cuid())
+  companyId       String?
+  company         Company? @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  
+  imageUrl        String
+  title           String?
+  linkUrl         String?
+  paymentProofUrl String?  
+  price           Int?     
+  
+  type            String   @default("CAROUSEL") // CAROUSEL atau SIDEBAR
+  durationDays    Int?     
+  startDate       DateTime @default(now())
+  endDate         DateTime? 
+  
+  status          String   @default("APPROVED") // PENDING, APPROVED, REJECTED
+  rejectionReason String?
+  
+  order           Int      @default(0)
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+}
+
+model ConsumerReport {
+  id        String   @id @default(cuid())
+  userId    String?  // Opsional, jika user login
+  name      String
+  email     String
+  category  String   // "PENGGUNAAN" atau "PELANGGARAN"
+  subject   String
+  message   String
+  status    String   @default("PENDING") // PENDING, RESOLVED, REJECTED
+  adminReply String? 
+  createdAt DateTime @default(now())
+}
