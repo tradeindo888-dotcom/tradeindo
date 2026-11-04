@@ -3,38 +3,58 @@ import { NextResponse } from "next/server";
 
 export default withAuth(
   function middleware(req) {
-    const role = req.nextauth.token?.role;
+    const token = req.nextauth.token;
+    const role = token?.role;
     const path = req.nextUrl.pathname;
 
-    // 1. Proteksi halaman /admin (Hanya ADMIN yang boleh masuk)
-    if (path.startsWith("/admin") && role !== "ADMIN") {
-      return NextResponse.redirect(new URL("/", req.url));
+    // Deteksi bahasa (locale) dari URL
+    const locale = path.startsWith("/en") ? "en" : "id";
+    
+    // Hapus prefix locale untuk mengecek hak akses
+    const cleanPath = path.replace(/^\/(id|en)/, "");
+
+    // 1. Proteksi halaman /admin (Hanya ADMIN)
+    if (cleanPath.startsWith("/admin") && role !== "ADMIN") {
+      return NextResponse.redirect(new URL(`/${locale}`, req.url));
     }
 
-    // 2. Proteksi halaman /workspace/seller (Hanya SUPPLIER dan ADMIN)
-    if (path.startsWith("/workspace/seller") && role !== "SUPPLIER" && role !== "ADMIN") {
-      return NextResponse.redirect(new URL("/workspace/buyer", req.url));
+    // 2. Proteksi halaman /workspace/seller (Hanya SUPPLIER & ADMIN)
+    if (cleanPath.startsWith("/workspace/seller") && role !== "SUPPLIER" && role !== "ADMIN") {
+      return NextResponse.redirect(new URL(`/${locale}/workspace/buyer`, req.url));
     }
 
-    // 3. Proteksi halaman /workspace/buyer (Hanya BUYER dan ADMIN)
-    if (path.startsWith("/workspace/buyer") && role !== "BUYER" && role !== "ADMIN") {
-      return NextResponse.redirect(new URL("/workspace/seller", req.url));
+    // 3. Proteksi halaman /workspace/buyer (Hanya BUYER & ADMIN)
+    if (cleanPath.startsWith("/workspace/buyer") && role !== "BUYER" && role !== "ADMIN") {
+      return NextResponse.redirect(new URL(`/${locale}/workspace/seller`, req.url));
+    }
+
+    // 4. Jika belum login dan mencoba akses rute privat
+    if (!token) {
+      const callbackUrl = encodeURIComponent(path);
+      return NextResponse.redirect(new URL(`/${locale}/login?callbackUrl=${callbackUrl}`, req.url));
     }
 
     return NextResponse.next();
   },
   {
     callbacks: {
-      authorized: ({ token }) => !!token, // Wajib login untuk halaman di bawah
-    },
-    pages: {
-      signIn: "/login",
+      // Biarkan middleware function di atas yang mengurus redirect
+      authorized: () => true,
     },
   }
 );
 
 export const config = {
+  // HANYA jalankan middleware di rute ini (halaman publik aman)
   matcher: [
-    '/((?!api|_next/static|_next/image|favicon.ico|sitemap|robots.txt).*)',
+    "/workspace/:path*",
+    "/admin/:path*",
+    "/rfqs/new",
+    "/id/workspace/:path*",
+    "/id/admin/:path*",
+    "/id/rfqs/new",
+    "/en/workspace/:path*",
+    "/en/admin/:path*",
+    "/en/rfqs/new",
   ],
 };
