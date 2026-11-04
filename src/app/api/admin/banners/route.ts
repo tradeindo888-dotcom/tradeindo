@@ -28,7 +28,8 @@ export async function POST(req: Request) {
     if (!imageUrl) return NextResponse.json({ error: "Gambar wajib diunggah" }, { status: 400 });
 
     let endDate = null;
-    if (type === "SIDEBAR" && durationDays) {
+    // Hitung endDate jika durasi diisi
+    if (durationDays && Number(durationDays) > 0) {
       endDate = new Date();
       endDate.setDate(endDate.getDate() + Number(durationDays));
     }
@@ -39,15 +40,16 @@ export async function POST(req: Request) {
         title: title || null,
         linkUrl: linkUrl || null,
         type: type || "CAROUSEL",
-        durationDays: type === "SIDEBAR" ? Number(durationDays) : null,
-        endDate,
+        durationDays: durationDays ? Number(durationDays) : null,
+        endDate, // Simpan tanggal berakhir
         order: Number(order) || 0,
-        status: "APPROVED", // Admin buat banner langsung APPROVED
+        status: "APPROVED",
         isActive: true,
       },
     });
     return NextResponse.json({ success: true, banner });
   } catch (error) {
+    console.error("Create banner error:", error);
     return NextResponse.json({ error: "Gagal membuat banner" }, { status: 500 });
   }
 }
