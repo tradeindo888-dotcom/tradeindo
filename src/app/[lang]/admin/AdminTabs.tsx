@@ -22,25 +22,21 @@ export default function AdminTabs({
 }) {
   const [activeTab, setActiveTab] = useState<"subscriptions" | "companies" | "sponsors" | "users" | "banners" | "pending_banners" | "reports" | "ad_revenue" | "sub_revenue" | "total_revenue" | "user_growth">("subscriptions");
   
-  // State Modal Verifikasi
   const [reviewCompany, setReviewCompany] = useState<any>(null);
   const [selectedDocImage, setSelectedDocImage] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState("");
   const [processing, setProcessing] = useState(false);
   
-  // State Lokal
   const [localCompanies, setLocalCompanies] = useState(companies);
   const [localUsers, setLocalUsers] = useState(users);
   const [localPendingBanners, setLocalPendingBanners] = useState(pendingBanners);
   const [localReports, setLocalReports] = useState(consumerReports);
   
-  // State Suspend/Ban
   const [actionUser, setActionUser] = useState<any>(null);
   const [actionType, setActionType] = useState<"ACTIVE" | "SUSPENDED" | "BANNED">("SUSPENDED");
   const [suspendReason, setSuspendReason] = useState("");
   const [savingUser, setSavingUser] = useState(false);
 
-  // State Banner Admin
   const [banners, setBanners] = useState<any[]>([]);
   const [loadingBanners, setLoadingBanners] = useState(false);
   const [editBannerId, setEditBannerId] = useState<string | null>(null); 
@@ -52,14 +48,12 @@ export default function AdminTabs({
   const [bannerDuration, setBannerDuration] = useState(30);
   const [uploadingBanner, setUploadingBanner] = useState(false);
 
-  // State Crop Gambar
   const [imageSrc, setImageSrc] = useState<string | null>(null);
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<any>(null);
   const [isCropping, setIsCropping] = useState(false);
 
-  // State untuk Laporan Konsumen (INI YANG SEMPAT HILANG)
   const [updatingReportId, setUpdatingReportId] = useState<string | null>(null);
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [replyText, setReplyText] = useState("");
@@ -84,7 +78,6 @@ export default function AdminTabs({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
-  // --- FUNGSI CROP & UPLOAD BANNER (ADMIN) ---
   const handleBannerFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]; if (!file) return;
     setImageSrc(URL.createObjectURL(file)); setIsCropping(true); e.target.value = ""; 
@@ -158,7 +151,6 @@ export default function AdminTabs({
     try { const res = await fetch(`/api/admin/banners/${id}`, { method: "DELETE" }); if (!res.ok) throw new Error(); toast.success("Banner dihapus."); setBanners(prev => prev.filter(b => b.id !== id)); } catch (err) { toast.error("Gagal menghapus."); }
   }
 
-  // --- FUNGSI PERSETUJUAN BANNER CUSTOMER (ALUR MANUAL) ---
   async function handleFinishBanner(id: string) {
     if (!confirm("Tandai antrean ini selesai dan hapus? Pastikan Anda SUDAH mengunggah banner buatan customer di tab 'Kelola Banner'.")) return;
     try { 
@@ -174,7 +166,6 @@ export default function AdminTabs({
     try { const res = await fetch(`/api/admin/banners/${id}`, { method: "DELETE" }); if (!res.ok) throw new Error(); toast.success("Pengajuan iklan ditolak."); setLocalPendingBanners(prev => prev.filter(b => b.id !== id)); } catch (err) { toast.error("Gagal menolak."); }
   }
 
-  // --- FUNGSI VERIFIKASI & SUSPEND ---
   async function handleVerify(action: "approve" | "reject") {
     if (action === "reject" && rejectReason.length < 5) return toast.error("Alasan wajib diisi.");
     setProcessing(true);
@@ -197,7 +188,6 @@ export default function AdminTabs({
     } catch (err) { toast.error("Gagal mengubah status."); } finally { setSavingUser(false); }
   }
 
-  // --- FUNGSI UPDATE LAPORAN KONSUMEN (NOTIFIKASI DIUBAH) ---
   async function handleUpdateReportStatus(id: string, newStatus: "RESOLVED" | "REJECTED") {
     if (replyingTo !== id) { setReplyingTo(id); setReplyText(""); return; }
     setUpdatingReportId(id);
@@ -207,7 +197,6 @@ export default function AdminTabs({
       
       if (!res.ok) throw new Error(data.error || "Gagal update");
       
-      // UBAH TEKS NOTIFIKASI DI SINI
       toast.success(newStatus === "RESOLVED" ? "Laporan Selesai. Pesan berhasil dikirim ke Inbox pelapor." : "Laporan Ditolak. Pesan berhasil dikirim ke Inbox pelapor.");
       
       setLocalReports(prev => prev.map(r => r.id === id ? { ...r, status: newStatus, adminReply: replyText } : r));
@@ -219,14 +208,28 @@ export default function AdminTabs({
     }
   }
 
+  // --- FUNGSI HAPUS LAPORAN (BARU) ---
+  async function handleDeleteReport(id: string) {
+    if (!confirm("Apakah Anda yakin ingin menghapus laporan ini secara permanen?")) return;
+    try {
+      const res = await fetch(`/api/admin/consumer-reports`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id })
+      });
+      if (!res.ok) throw new Error();
+      toast.success("Laporan berhasil dihapus.");
+      setLocalReports(prev => prev.filter(r => r.id !== id));
+    } catch (err) {
+      toast.error("Gagal menghapus laporan.");
+    }
+  }
+
   return (
     <div className="mt-2">
-      {/* BANNER TOTAL PENERIMAAN */}
       <div className="bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-700 rounded-xl p-5 text-white shadow-lg mb-6 flex flex-col md:flex-row justify-between items-center gap-4">
         <div>
-          <h2 className="text-lg font-bold text-indigo-50 flex items-center gap-2">
-            💰 Total Penerimaan Bulan Ini
-          </h2>
+          <h2 className="text-lg font-bold text-indigo-50 flex items-center gap-2">💰 Total Penerimaan Bulan Ini</h2>
           <p className="text-sm text-indigo-200">Gabungan dari Pendapatan Iklan + Langganan</p>
         </div>
         <div className="text-3xl font-black tabular-nums bg-white/10 px-6 py-2 rounded-lg border border-white/20">
@@ -234,7 +237,6 @@ export default function AdminTabs({
         </div>
       </div>
 
-      {/* TOMBOL TAB */}
       <div className="flex border-b border-neutral-200 dark:border-neutral-800 mb-4 overflow-x-auto">
         <button onClick={() => setActiveTab("subscriptions")} className={`px-4 py-2 text-sm font-medium border-b-2 whitespace-nowrap ${activeTab === "subscriptions" ? "border-forest-700 text-forest-700 dark:border-lime-400 dark:text-lime-400" : "border-transparent text-neutral-500"}`}>Langganan ({subscriptions.length})</button>
         <button onClick={() => setActiveTab("companies")} className={`px-4 py-2 text-sm font-medium border-b-2 whitespace-nowrap ${activeTab === "companies" ? "border-forest-700 text-forest-700 dark:border-lime-400 dark:text-lime-400" : "border-transparent text-neutral-500"}`}>Verifikasi PT ({localCompanies.length})</button>
@@ -249,7 +251,7 @@ export default function AdminTabs({
         <button onClick={() => setActiveTab("user_growth")} className={`px-4 py-2 text-sm font-medium border-b-2 whitespace-nowrap ${activeTab === "user_growth" ? "border-purple-600 text-purple-600 dark:border-purple-400 dark:text-purple-400" : "border-transparent text-neutral-500"}`}>👥 Pertumbuhan User</button>
       </div>
 
-      {/* (SISA TAB LAINNYA TETAP SAMA SEPERTI SEBELUMNYA) */}
+      {/* SISA TAB LAINNYA TETAP SAMA SEPERTI SEBELUMNYA */}
       {activeTab === "subscriptions" && (
         <div className="overflow-x-auto rounded-md border border-neutral-200 dark:border-neutral-800">
           <table className="w-full text-sm text-left">
@@ -480,6 +482,9 @@ export default function AdminTabs({
         </div>
       )}
 
+      {/* ======================================================== */}
+      {/* TAB LAPORAN KONSUMEN (DENGAN TOMBOL DELETE) */}
+      {/* ======================================================== */}
       {activeTab === "reports" && (
         <div className="overflow-x-auto rounded-md border border-neutral-200 dark:border-neutral-800">
           <table className="w-full text-sm text-left">
@@ -523,54 +528,61 @@ export default function AdminTabs({
                     </span>
                   </td>
                   <td className="p-3">
-                    {r.status === "PENDING" ? (
-                      <div className="flex flex-col gap-2">
-                        {replyingTo === r.id && (
-                          <textarea 
-                            value={replyText}
-                            onChange={(e) => setReplyText(e.target.value)}
-                            placeholder="Ketik balasan untuk pelapor..."
-                            className="w-full text-xs p-2 border rounded-md min-h-[60px]"
-                          />
-                        )}
-
-                        <div className="flex gap-2">
-                          <button 
-                            onClick={() => handleUpdateReportStatus(r.id, "RESOLVED")}
-                            disabled={updatingReportId === r.id}
-                            className="bg-forest-700 hover:bg-forest-500 text-white px-2.5 py-1 rounded text-xs disabled:opacity-50 whitespace-nowrap"
-                          >
-                            {replyingTo === r.id ? "Kirim & Selesai" : "✓ Selesai"}
-                          </button>
-                          
+                    <div className="flex flex-col gap-2">
+                      {r.status === "PENDING" ? (
+                        <>
                           {replyingTo === r.id && (
-                            <button 
-                              onClick={() => setReplyingTo(null)}
-                              className="border border-neutral-300 text-neutral-600 hover:bg-neutral-100 px-2.5 py-1 rounded text-xs"
-                            >
-                              Batal
-                            </button>
+                            <textarea 
+                              value={replyText}
+                              onChange={(e) => setReplyText(e.target.value)}
+                              placeholder="Ketik balasan..."
+                              className="w-full text-xs p-2 border rounded-md min-h-[60px]"
+                            />
                           )}
-
-                          {replyingTo !== r.id && (
+                          <div className="flex gap-2">
                             <button 
-                              onClick={() => handleUpdateReportStatus(r.id, "REJECTED")}
+                              onClick={() => handleUpdateReportStatus(r.id, "RESOLVED")}
                               disabled={updatingReportId === r.id}
-                              className="border border-neutral-300 text-neutral-600 hover:bg-neutral-100 px-2.5 py-1 rounded text-xs disabled:opacity-50 whitespace-nowrap"
+                              className="bg-forest-700 hover:bg-forest-500 text-white px-2.5 py-1 rounded text-xs disabled:opacity-50 whitespace-nowrap"
                             >
-                              ✕ Tolak
+                              {replyingTo === r.id ? "Kirim & Selesai" : "✓ Selesai"}
                             </button>
+                            
+                            {replyingTo === r.id ? (
+                              <button 
+                                onClick={() => setReplyingTo(null)}
+                                className="border border-neutral-300 text-neutral-600 hover:bg-neutral-100 px-2.5 py-1 rounded text-xs"
+                              >
+                                Batal
+                              </button>
+                            ) : (
+                              <button 
+                                onClick={() => handleUpdateReportStatus(r.id, "REJECTED")}
+                                disabled={updatingReportId === r.id}
+                                className="border border-neutral-300 text-neutral-600 hover:bg-neutral-100 px-2.5 py-1 rounded text-xs disabled:opacity-50 whitespace-nowrap"
+                              >
+                                ✕ Tolak
+                              </button>
+                            )}
+                          </div>
+                        </>
+                      ) : (
+                        <div className="flex flex-col gap-1 mb-2">
+                          <span className="text-xs text-neutral-400 italic">Sudah ditangani</span>
+                          {r.adminReply && (
+                            <span className="text-[10px] text-forest-700 bg-forest-50 p-1 rounded">Balasan: {r.adminReply}</span>
                           )}
                         </div>
-                      </div>
-                    ) : (
-                      <div className="flex flex-col gap-1">
-                        <span className="text-xs text-neutral-400 italic">Sudah ditangani</span>
-                        {r.adminReply && (
-                          <span className="text-[10px] text-forest-700 bg-forest-50 p-1 rounded">Balasan: {r.adminReply}</span>
-                        )}
-                      </div>
-                    )}
+                      )}
+                      
+                      {/* TOMBOL DELETE BARU */}
+                      <button
+                        onClick={() => handleDeleteReport(r.id)}
+                        className="text-xs text-red-600 border border-red-200 bg-red-50 hover:bg-red-100 px-2.5 py-1 rounded whitespace-nowrap w-fit transition-colors"
+                      >
+                        🗑️ Hapus
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
