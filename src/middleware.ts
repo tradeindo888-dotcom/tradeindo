@@ -34,5 +34,12 @@ export default withAuth(
 );
 
 export const config = {
-  matcher: ["/workspace/:path*", "/admin/:path*", "/rfqs/new"],
+  matcher: [
+    /*
+     * Jalankan middleware di semua path KECUALI:
+     * - api, _next/static, _next/image, favicon.ico
+     * - sitemap (folder baru kita), robots.txt
+     */
+    '/((?!api|_next/static|_next/image|favicon.ico|sitemap|robots.txt).*)',
+  ],
 };
