@@ -11,7 +11,7 @@ export default function RegisterPage() {
   const lang = params.lang === "en" ? "en" : "id";
 
   // 1. STATE FORM
-  const [role, setRole] = useState<"BUYER" | "SUPPLIER">("SUPPLIER");
+  const [role, setRole] = useState<"BUYER" | "SUPPLIER">("BUYER"); // Default ke Buyer agar sesuai screenshot
   const [loading, setLoading] = useState(false);
   const [isGuideOpen, setIsGuideOpen] = useState(false);
   const [form, setForm] = useState({
@@ -108,14 +108,14 @@ export default function RegisterPage() {
   return (
     <div className="mx-auto max-w-2xl px-4 py-12">
       
-      {/* TABS: PILIH ROLE */}
+      {/* TABS: PILIH ROLE (DIPERBAIKI: Buyer sekarang hijau penuh saat aktif) */}
       <div className="flex w-full mb-4">
         <button
           type="button"
           onClick={() => setRole("BUYER")}
           className={`flex-1 py-3 text-sm font-bold border-b-2 transition-all ${
             role === "BUYER" 
-              ? "border-forest-700 text-forest-700 dark:border-lime-400 dark:text-lime-400 bg-forest-700/5" 
+              ? "border-forest-700 text-white bg-forest-700 dark:border-lime-400 dark:bg-forest-700" 
               : "border-neutral-200 text-neutral-500 hover:text-neutral-700 bg-white dark:bg-neutral-900 dark:border-neutral-800"
           }`}
         >
