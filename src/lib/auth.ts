@@ -15,10 +15,10 @@ export const authOptions: NextAuthOptions = {
         const user = await prisma.user.findUnique({ where: { email: credentials.email } });
         if (!user) return null;
 
-        // Cek Verifikasi Email (Admin bebas)
-        if (user.role !== "ADMIN" && !user.emailVerifiedAt) {
-          throw new Error("EmailNotVerified");
-        }
+        // --- BLOKIR VERIFIKASI EMAIL TELAH DIHAPUS ---
+        // if (user.role !== "ADMIN" && !user.emailVerifiedAt) {
+        //   throw new Error("EmailNotVerified");
+        // }
 
         // Cek Status Akun
         if (user.status === "SUSPENDED") {
@@ -44,7 +44,6 @@ export const authOptions: NextAuthOptions = {
   ],
   callbacks: {
     async jwt({ token, user }) {
-      // Saat login pertama kali, 'user' tersedia. Salin datanya ke 'token'
       if (user) {
         token.id = user.id;
         token.role = (user as any).role;
@@ -53,7 +52,6 @@ export const authOptions: NextAuthOptions = {
       return token;
     },
     async session({ session, token }) {
-      // Kirim data dari 'token' ke 'session' agar bisa dibaca frontend
       if (session.user) {
         (session.user as any).id = token.id || token.sub;
         (session.user as any).role = token.role;
@@ -62,5 +60,5 @@ export const authOptions: NextAuthOptions = {
       return session;
     },
   },
-  pages: { signIn: "/id/login" }, // Sesuaikan dengan rute login default Anda
+  pages: { signIn: "/id/login" },
 };
