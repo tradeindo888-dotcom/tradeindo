@@ -22,8 +22,10 @@ export function ProfileViewTracker({
   supplierCompanyId: string;
 }) {
   const { data: session, status } = useSession();
-  const viewerId = session?.user?.id ?? "anon";
-  const myCompanyId = session?.user?.companyId;
+  
+  // PERBAIKAN: Gunakan 'as any' agar TypeScript mengenali properti kustom
+  const viewerId = (session?.user as any)?.id ?? "anon";
+  const myCompanyId = (session?.user as any)?.companyId;
 
   useEffect(() => {
     // 1. Tunggu session selesai loading

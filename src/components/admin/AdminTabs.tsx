@@ -4,7 +4,6 @@ import { toast } from "sonner";
 import Cropper from "react-easy-crop";
 import getCroppedImg from "@/lib/cropImage";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
-import AdminTabs from "@/components/admin/AdminTabs";
 
 export default function AdminTabs({ 
   subscriptions, companies, sponsors, users, pendingBanners = [], consumerReports = [], 

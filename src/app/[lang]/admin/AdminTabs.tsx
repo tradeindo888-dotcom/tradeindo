@@ -22,21 +22,25 @@ export default function AdminTabs({
 }) {
   const [activeTab, setActiveTab] = useState<"subscriptions" | "companies" | "sponsors" | "users" | "banners" | "pending_banners" | "reports" | "ad_revenue" | "sub_revenue" | "total_revenue" | "user_growth">("subscriptions");
   
+  // State Modal Verifikasi
   const [reviewCompany, setReviewCompany] = useState<any>(null);
   const [selectedDocImage, setSelectedDocImage] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState("");
   const [processing, setProcessing] = useState(false);
   
+  // State Lokal
   const [localCompanies, setLocalCompanies] = useState(companies);
   const [localUsers, setLocalUsers] = useState(users);
   const [localPendingBanners, setLocalPendingBanners] = useState(pendingBanners);
   const [localReports, setLocalReports] = useState(consumerReports);
   
+  // State Suspend/Ban
   const [actionUser, setActionUser] = useState<any>(null);
   const [actionType, setActionType] = useState<"ACTIVE" | "SUSPENDED" | "BANNED">("SUSPENDED");
   const [suspendReason, setSuspendReason] = useState("");
   const [savingUser, setSavingUser] = useState(false);
 
+  // State Banner Admin
   const [banners, setBanners] = useState<any[]>([]);
   const [loadingBanners, setLoadingBanners] = useState(false);
   const [editBannerId, setEditBannerId] = useState<string | null>(null); 
@@ -47,12 +51,14 @@ export default function AdminTabs({
   const [bannerOrder, setBannerOrder] = useState(1);
   const [uploadingBanner, setUploadingBanner] = useState(false);
 
+  // State Crop Gambar
   const [imageSrc, setImageSrc] = useState<string | null>(null);
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<any>(null);
   const [isCropping, setIsCropping] = useState(false);
 
+  // State untuk Laporan Konsumen
   const [updatingReportId, setUpdatingReportId] = useState<string | null>(null);
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [replyText, setReplyText] = useState("");
@@ -77,6 +83,7 @@ export default function AdminTabs({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
+  // --- FUNGSI CROP & UPLOAD BANNER (ADMIN) ---
   const handleBannerFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]; if (!file) return;
     setImageSrc(URL.createObjectURL(file)); setIsCropping(true); e.target.value = ""; 
@@ -140,6 +147,7 @@ export default function AdminTabs({
     try { const res = await fetch(`/api/admin/banners/${id}`, { method: "DELETE" }); if (!res.ok) throw new Error(); toast.success("Pengajuan iklan ditolak."); setLocalPendingBanners(prev => prev.filter(b => b.id !== id)); } catch (err) { toast.error("Gagal menolak."); }
   }
 
+  // --- FUNGSI VERIFIKASI & SUSPEND ---
   async function handleVerify(action: "approve" | "reject") {
     if (action === "reject" && rejectReason.length < 5) return toast.error("Alasan wajib diisi.");
     setProcessing(true);
@@ -177,9 +185,12 @@ export default function AdminTabs({
 
   return (
     <div className="mt-2">
+      {/* BANNER TOTAL PENERIMAAN */}
       <div className="bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-700 rounded-xl p-5 text-white shadow-lg mb-6 flex flex-col md:flex-row justify-between items-center gap-4">
         <div>
-          <h2 className="text-lg font-bold text-indigo-50 flex items-center gap-2">💰 Total Penerimaan Bulan Ini</h2>
+          <h2 className="text-lg font-bold text-indigo-50 flex items-center gap-2">
+            💰 Total Penerimaan Bulan Ini
+          </h2>
           <p className="text-sm text-indigo-200">Gabungan dari Pendapatan Iklan + Langganan</p>
         </div>
         <div className="text-3xl font-black tabular-nums bg-white/10 px-6 py-2 rounded-lg border border-white/20">
@@ -187,6 +198,7 @@ export default function AdminTabs({
         </div>
       </div>
 
+      {/* TOMBOL TAB */}
       <div className="flex border-b border-neutral-200 dark:border-neutral-800 mb-4 overflow-x-auto">
         <button onClick={() => setActiveTab("subscriptions")} className={`px-4 py-2 text-sm font-medium border-b-2 whitespace-nowrap ${activeTab === "subscriptions" ? "border-forest-700 text-forest-700 dark:border-lime-400 dark:text-lime-400" : "border-transparent text-neutral-500"}`}>Langganan ({subscriptions.length})</button>
         <button onClick={() => setActiveTab("companies")} className={`px-4 py-2 text-sm font-medium border-b-2 whitespace-nowrap ${activeTab === "companies" ? "border-forest-700 text-forest-700 dark:border-lime-400 dark:text-lime-400" : "border-transparent text-neutral-500"}`}>Verifikasi PT ({localCompanies.length})</button>
@@ -201,38 +213,219 @@ export default function AdminTabs({
         <button onClick={() => setActiveTab("user_growth")} className={`px-4 py-2 text-sm font-medium border-b-2 whitespace-nowrap ${activeTab === "user_growth" ? "border-purple-600 text-purple-600 dark:border-purple-400 dark:text-purple-400" : "border-transparent text-neutral-500"}`}>👥 Pertumbuhan User</button>
       </div>
 
-      {activeTab === "ad_revenue" && (
-        <div className="rounded-xl border bg-white p-6 shadow-sm dark:bg-neutral-900 dark:border-neutral-800">
-          <h3 className="font-bold text-lg mb-4">Grafik Pendapatan Iklan ({new Date().getFullYear()})</h3>
-          <div className="h-[300px]"><ResponsiveContainer width="100%" height="100%"><BarChart data={adRevenueChartData}><CartesianGrid strokeDasharray="3 3" vertical={false} /><XAxis dataKey="name" fontSize={12} /><YAxis fontSize={12} tickFormatter={(val) => `Rp ${val/1000}k`} /><Tooltip formatter={(val) => [`Rp ${Number(val).toLocaleString("id-ID")}`, "Pendapatan"]} /><Bar dataKey="total" fill="#14532D" radius={[4, 4, 0, 0]} maxBarSize={50} /></BarChart></ResponsiveContainer></div>
-        </div>
-      )}
-
-      {activeTab === "sub_revenue" && (
-        <div className="rounded-xl border bg-white p-6 shadow-sm dark:bg-neutral-900 dark:border-neutral-800">
-          <h3 className="font-bold text-lg mb-4">Grafik Pendapatan Langganan ({new Date().getFullYear()})</h3>
-          <div className="h-[300px]"><ResponsiveContainer width="100%" height="100%"><BarChart data={subscriptionChartData}><CartesianGrid strokeDasharray="3 3" vertical={false} /><XAxis dataKey="name" fontSize={12} /><YAxis fontSize={12} tickFormatter={(val) => `Rp ${val/1000}k`} /><Tooltip formatter={(val) => [`Rp ${Number(val).toLocaleString("id-ID")}`, "Pendapatan"]} /><Bar dataKey="total" fill="#1d4ed8" radius={[4, 4, 0, 0]} maxBarSize={50} /></BarChart></ResponsiveContainer></div>
-        </div>
-      )}
-
-      {activeTab === "total_revenue" && (
-        <div className="rounded-xl border bg-white p-6 shadow-sm dark:bg-neutral-900 dark:border-neutral-800">
-          <h3 className="font-bold text-lg mb-4">Grafik Total Penerimaan ({new Date().getFullYear()})</h3>
-          <div className="h-[300px]"><ResponsiveContainer width="100%" height="100%"><BarChart data={totalRevenueChartData}><CartesianGrid strokeDasharray="3 3" vertical={false} /><XAxis dataKey="name" fontSize={12} /><YAxis fontSize={12} tickFormatter={(val) => `Rp ${val/1000}k`} /><Tooltip formatter={(val) => [`Rp ${Number(val).toLocaleString("id-ID")}`, "Total"]} /><Bar dataKey="total" fill="#4f46e5" radius={[4, 4, 0, 0]} maxBarSize={50} /></BarChart></ResponsiveContainer></div>
-        </div>
-      )}
-
+      {/* ======================================================== */}
+      {/* TAB: PERTUMBUHAN USER */}
+      {/* ======================================================== */}
       {activeTab === "user_growth" && (
-        <div className="rounded-xl border bg-white p-6 shadow-sm dark:bg-neutral-900 dark:border-neutral-800">
-          <h3 className="font-bold text-lg mb-4">Grafik Pertumbuhan User ({new Date().getFullYear()})</h3>
-          <div className="h-[300px]"><ResponsiveContainer width="100%" height="100%"><BarChart data={userChartData}><CartesianGrid strokeDasharray="3 3" vertical={false} /><XAxis dataKey="name" fontSize={12} /><YAxis fontSize={12} /><Tooltip formatter={(val) => [`${val} User`, "Terdaftar"]} /><Bar dataKey="total" fill="#8b5cf6" radius={[4, 4, 0, 0]} maxBarSize={50} /></BarChart></ResponsiveContainer></div>
+        <div className="space-y-6">
+          <div className="rounded-xl border border-neutral-200 bg-white p-6 shadow-sm dark:border-neutral-800 dark:bg-neutral-900">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="font-bold text-lg text-purple-900 dark:text-purple-300">Grafik Pertumbuhan User ({new Date().getFullYear()})</h3>
+              <div className="text-sm font-semibold text-white bg-purple-600 px-3 py-1 rounded-md shadow-sm">
+                Total: {totalUsers} User
+              </div>
+            </div>
+            <div className="h-[300px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={userChartData} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e5e5" />
+                  <XAxis dataKey="name" tick={{ fontSize: 12 }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 12 }} axisLine={false} tickLine={false} />
+                  <Tooltip formatter={(value: any) => [`${value} User Baru`, "Terdaftar"] as [string, string]} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                  <Bar dataKey="total" fill="#8b5cf6" radius={[4, 4, 0, 0]} maxBarSize={50} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+          <div className="rounded-xl border border-neutral-200 bg-white overflow-hidden shadow-sm dark:border-neutral-800 dark:bg-neutral-900">
+            <table className="w-full text-sm text-left">
+              <thead className="bg-neutral-100 dark:bg-neutral-800">
+                <tr><th className="p-4 font-medium">Bulan</th><th className="p-4 font-medium text-right">User Baru Terdaftar</th></tr>
+              </thead>
+              <tbody>
+                {userChartData.map((data, idx) => (
+                  <tr key={idx} className="border-t border-neutral-200 dark:border-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-900/50">
+                    <td className="p-4 capitalize">{data.name}</td>
+                    <td className="p-4 text-right font-semibold tabular-nums text-purple-700 dark:text-purple-400">{data.total} User</td>
+                  </tr>
+                ))}
+              </tbody>
+              {/* ✅ BARIS TOTAL SETAHUN (PERTUMBUHAN USER) */}
+              <tfoot className="bg-neutral-50 dark:bg-neutral-800/50 font-bold border-t-2 border-neutral-200 dark:border-neutral-700">
+                <tr>
+                  <td className="p-4 text-purple-900 dark:text-white">Total Setahun</td>
+                  <td className="p-4 text-right tabular-nums text-purple-700 dark:text-purple-400">
+                    {userChartData.reduce((sum, item) => sum + item.total, 0)} User
+                  </td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
         </div>
       )}
 
+      {/* ======================================================== */}
+      {/* TAB: PENDAPATAN IKLAN */}
+      {/* ======================================================== */}
+      {activeTab === "ad_revenue" && (
+        <div className="space-y-6">
+          <div className="rounded-xl border border-neutral-200 bg-white p-6 shadow-sm dark:border-neutral-800 dark:bg-neutral-900">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="font-bold text-lg text-forest-900 dark:text-white">Grafik Pendapatan Iklan ({new Date().getFullYear()})</h3>
+              <div className="text-sm font-semibold text-forest-700 bg-forest-50 px-3 py-1 rounded-md dark:bg-forest-900/30 dark:text-lime-400">
+                Bulan Ini: Rp {currentMonthAdRevenue.toLocaleString("id-ID")}
+              </div>
+            </div>
+            <div className="h-[300px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={adRevenueChartData} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e5e5" />
+                  <XAxis dataKey="name" tick={{ fontSize: 12 }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 12 }} tickFormatter={(value) => `Rp ${Number(value) / 1000}k`} axisLine={false} tickLine={false} />
+                  <Tooltip formatter={(value: any) => [`Rp ${Number(value || 0).toLocaleString("id-ID")}`, "Pendapatan"] as [string, string]} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                  <Bar dataKey="total" fill="#14532D" radius={[4, 4, 0, 0]} maxBarSize={50} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+          <div className="rounded-xl border border-neutral-200 bg-white overflow-hidden shadow-sm dark:border-neutral-800 dark:bg-neutral-900">
+            <table className="w-full text-sm text-left">
+              <thead className="bg-neutral-100 dark:bg-neutral-800">
+                <tr><th className="p-4 font-medium">Bulan</th><th className="p-4 font-medium text-right">Total Pendapatan</th></tr>
+              </thead>
+              <tbody>
+                {adRevenueChartData.map((data, idx) => (
+                  <tr key={idx} className="border-t border-neutral-200 dark:border-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-900/50">
+                    <td className="p-4 capitalize">{data.name}</td>
+                    <td className="p-4 text-right font-semibold tabular-nums">Rp {data.total.toLocaleString("id-ID")}</td>
+                  </tr>
+                ))}
+              </tbody>
+              {/* ✅ BARIS TOTAL SETAHUN (IKLAN) */}
+              <tfoot className="bg-neutral-50 dark:bg-neutral-800/50 font-bold border-t-2 border-neutral-200 dark:border-neutral-700">
+                <tr>
+                  <td className="p-4 text-forest-900 dark:text-white">Total Setahun</td>
+                  <td className="p-4 text-right tabular-nums text-forest-700 dark:text-lime-400">
+                    Rp {adRevenueChartData.reduce((sum, item) => sum + item.total, 0).toLocaleString("id-ID")}
+                  </td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* ======================================================== */}
+      {/* TAB: PENDAPATAN LANGGANAN */}
+      {/* ======================================================== */}
+      {activeTab === "sub_revenue" && (
+        <div className="space-y-6">
+          <div className="rounded-xl border border-neutral-200 bg-white p-6 shadow-sm dark:border-neutral-800 dark:bg-neutral-900">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="font-bold text-lg text-blue-900 dark:text-blue-300">Grafik Pendapatan Langganan ({new Date().getFullYear()})</h3>
+              <div className="text-sm font-semibold text-blue-700 bg-blue-50 px-3 py-1 rounded-md dark:bg-blue-900/30 dark:text-blue-400">
+                Bulan Ini: Rp {currentMonthSubRevenue.toLocaleString("id-ID")}
+              </div>
+            </div>
+            <div className="h-[300px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={subscriptionChartData} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e5e5" />
+                  <XAxis dataKey="name" tick={{ fontSize: 12 }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 12 }} tickFormatter={(value) => `Rp ${Number(value) / 1000}k`} axisLine={false} tickLine={false} />
+                  <Tooltip formatter={(value: any) => [`Rp ${Number(value || 0).toLocaleString("id-ID")}`, "Pendapatan"] as [string, string]} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                  <Bar dataKey="total" fill="#1d4ed8" radius={[4, 4, 0, 0]} maxBarSize={50} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+          <div className="rounded-xl border border-neutral-200 bg-white overflow-hidden shadow-sm dark:border-neutral-800 dark:bg-neutral-900">
+            <table className="w-full text-sm text-left">
+              <thead className="bg-neutral-100 dark:bg-neutral-800">
+                <tr><th className="p-4 font-medium">Bulan</th><th className="p-4 font-medium text-right">Total Pendapatan</th></tr>
+              </thead>
+              <tbody>
+                {subscriptionChartData.map((data, idx) => (
+                  <tr key={idx} className="border-t border-neutral-200 dark:border-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-900/50">
+                    <td className="p-4 capitalize">{data.name}</td>
+                    <td className="p-4 text-right font-semibold tabular-nums">Rp {data.total.toLocaleString("id-ID")}</td>
+                  </tr>
+                ))}
+              </tbody>
+              {/* ✅ BARIS TOTAL SETAHUN (LANGGANAN) */}
+              <tfoot className="bg-neutral-50 dark:bg-neutral-800/50 font-bold border-t-2 border-neutral-200 dark:border-neutral-700">
+                <tr>
+                  <td className="p-4 text-blue-900 dark:text-white">Total Setahun</td>
+                  <td className="p-4 text-right tabular-nums text-blue-700 dark:text-blue-400">
+                    Rp {subscriptionChartData.reduce((sum, item) => sum + item.total, 0).toLocaleString("id-ID")}
+                  </td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* ======================================================== */}
+      {/* TAB: TOTAL PENERIMAAN (GABUNGAN) */}
+      {/* ======================================================== */}
+      {activeTab === "total_revenue" && (
+        <div className="space-y-6">
+          <div className="rounded-xl border border-neutral-200 bg-white p-6 shadow-sm dark:border-neutral-800 dark:bg-neutral-900">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="font-bold text-lg text-indigo-900 dark:text-indigo-300">Grafik Total Penerimaan ({new Date().getFullYear()})</h3>
+              <div className="text-sm font-semibold text-white bg-indigo-600 px-3 py-1 rounded-md shadow-sm">
+                Bulan Ini: Rp {currentMonthTotalRevenue.toLocaleString("id-ID")}
+              </div>
+            </div>
+            <div className="h-[300px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={totalRevenueChartData} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e5e5" />
+                  <XAxis dataKey="name" tick={{ fontSize: 12 }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 12 }} tickFormatter={(value) => `Rp ${Number(value) / 1000}k`} axisLine={false} tickLine={false} />
+                  <Tooltip formatter={(value: any) => [`Rp ${Number(value || 0).toLocaleString("id-ID")}`, "Total Penerimaan"] as [string, string]} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                  <Bar dataKey="total" fill="#4f46e5" radius={[4, 4, 0, 0]} maxBarSize={50} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+          <div className="rounded-xl border border-neutral-200 bg-white overflow-hidden shadow-sm dark:border-neutral-800 dark:bg-neutral-900">
+            <table className="w-full text-sm text-left">
+              <thead className="bg-neutral-100 dark:bg-neutral-800">
+                <tr><th className="p-4 font-medium">Bulan</th><th className="p-4 font-medium text-right">Total Penerimaan</th></tr>
+              </thead>
+              <tbody>
+                {totalRevenueChartData.map((data, idx) => (
+                  <tr key={idx} className="border-t border-neutral-200 dark:border-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-900/50">
+                    <td className="p-4 capitalize">{data.name}</td>
+                    <td className="p-4 text-right font-semibold tabular-nums">Rp {data.total.toLocaleString("id-ID")}</td>
+                  </tr>
+                ))}
+              </tbody>
+              {/* ✅ BARIS TOTAL SETAHUN (TOTAL PENERIMAAN) */}
+              <tfoot className="bg-neutral-50 dark:bg-neutral-800/50 font-bold border-t-2 border-neutral-200 dark:border-neutral-700">
+                <tr>
+                  <td className="p-4 text-indigo-900 dark:text-white">Total Setahun</td>
+                  <td className="p-4 text-right tabular-nums text-indigo-700 dark:text-indigo-400">
+                    Rp {totalRevenueChartData.reduce((sum, item) => sum + item.total, 0).toLocaleString("id-ID")}
+                  </td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* ======================================================== */}
+      {/* TAB 1: LANGGANAN */}
+      {/* ======================================================== */}
       {activeTab === "subscriptions" && (
         <div className="overflow-x-auto rounded-md border border-neutral-200 dark:border-neutral-800">
           <table className="w-full text-sm text-left">
-            <thead className="bg-neutral-100 dark:bg-neutral-800"><tr><th className="p-3">Perusahaan</th><th className="p-3">Paket</th><th className="p-3">Tanggal</th><th className="p-3">Bukti</th><th className="p-3">Aksi</th></tr></thead>
+            <thead className="bg-neutral-100 dark:bg-neutral-800">
+              <tr><th className="p-3">Perusahaan</th><th className="p-3">Paket</th><th className="p-3">Tanggal</th><th className="p-3">Bukti</th><th className="p-3">Aksi</th></tr>
+            </thead>
             <tbody>
               {subscriptions.map((req) => (
                 <tr key={req.id} className="border-t border-neutral-200 dark:border-neutral-800">
@@ -252,10 +445,15 @@ export default function AdminTabs({
         </div>
       )}
 
+      {/* ======================================================== */}
+      {/* TAB 2: VERIFIKASI PT */}
+      {/* ======================================================== */}
       {activeTab === "companies" && (
         <div className="overflow-x-auto rounded-md border border-neutral-200 dark:border-neutral-800">
           <table className="w-full text-sm text-left">
-            <thead className="bg-neutral-100 dark:bg-neutral-800"><tr><th className="p-3">Nama Perusahaan</th><th className="p-3">Tipe</th><th className="p-3">Status</th><th className="p-3 text-right">Aksi</th></tr></thead>
+            <thead className="bg-neutral-100 dark:bg-neutral-800">
+              <tr><th className="p-3">Nama Perusahaan</th><th className="p-3">Tipe</th><th className="p-3">Status</th><th className="p-3 text-right">Aksi</th></tr>
+            </thead>
             <tbody>
               {localCompanies.map((c) => (
                 <tr key={c.id} className="border-t border-neutral-200 dark:border-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-900/50">
@@ -263,7 +461,9 @@ export default function AdminTabs({
                   <td className="p-3">{c.type}</td>
                   <td className="p-3"><span className={`px-2 py-0.5 text-xs rounded-full ${c.verificationStatus === "VERIFIED" ? "bg-green-100 text-green-800" : c.verificationStatus === "PENDING" ? "bg-amber-100 text-amber-800" : "bg-red-100 text-red-800"}`}>{c.verificationStatus}</span></td>
                   <td className="p-3 text-right">
-                    {c.verificationStatus === "PENDING" ? (<button onClick={() => setReviewCompany(c)} className="bg-forest-700 text-white px-4 py-1.5 rounded-md text-xs font-bold hover:bg-forest-500 transition-colors shadow-sm">🔍 Periksa Dokumen</button>) : c.verificationStatus === "VERIFIED" ? (<span className="text-green-600 text-xs font-medium">✓ Terverifikasi</span>) : (<span className="text-red-500 text-xs font-medium">Ditolak</span>)}
+                    {c.verificationStatus === "PENDING" ? (
+                      <button onClick={() => setReviewCompany(c)} className="bg-forest-700 text-white px-4 py-1.5 rounded-md text-xs font-bold hover:bg-forest-500 transition-colors shadow-sm">🔍 Periksa Dokumen</button>
+                    ) : c.verificationStatus === "VERIFIED" ? (<span className="text-green-600 text-xs font-medium">✓ Terverifikasi</span>) : (<span className="text-red-500 text-xs font-medium">Ditolak</span>)}
                   </td>
                 </tr>
               ))}
@@ -272,17 +472,29 @@ export default function AdminTabs({
         </div>
       )}
 
+      {/* ======================================================== */}
+      {/* TAB 3: IKLAN PRODUK */}
+      {/* ======================================================== */}
       {activeTab === "sponsors" && (
         <div className="overflow-x-auto rounded-md border border-neutral-200 dark:border-neutral-800">
           <table className="w-full text-sm text-left">
-            <thead className="bg-neutral-100 dark:bg-neutral-800"><tr><th className="p-3">Perusahaan</th><th className="p-3">Produk</th><th className="p-3">Durasi</th><th className="p-3">Total</th><th className="p-3">Bukti</th><th className="p-3">Aksi</th></tr></thead>
+            <thead className="bg-neutral-100 dark:bg-neutral-800">
+              <tr><th className="p-3">Perusahaan</th><th className="p-3">Produk</th><th className="p-3">Durasi</th><th className="p-3">Total</th><th className="p-3">Bukti</th><th className="p-3">Aksi</th></tr>
+            </thead>
             <tbody>
               {sponsors.map((req: any) => {
                 const imgUrl = req.product?.images?.[0]?.url;
                 return (
                   <tr key={req.id} className="border-t border-neutral-200 dark:border-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-900/50">
                     <td className="p-3 font-medium">{req.company?.name ?? "-"}</td>
-                    <td className="p-3"><div className="flex items-center gap-3"><div className="h-12 w-12 shrink-0 rounded-md border border-neutral-200 bg-neutral-100 overflow-hidden relative group cursor-pointer" onClick={() => imgUrl && setSelectedDocImage(imgUrl)}>{imgUrl ? (<><img src={imgUrl} alt={req.product.titleId} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-110" /><div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity"><svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" /></svg></div></>) : (<div className="h-full w-full flex items-center justify-center text-[10px] text-neutral-400">No Img</div>)}</div><span className="line-clamp-2">{req.product?.titleId ?? "-"}</span></div></td>
+                    <td className="p-3">
+                      <div className="flex items-center gap-3">
+                        <div className="h-12 w-12 shrink-0 rounded-md border border-neutral-200 bg-neutral-100 overflow-hidden relative group cursor-pointer" onClick={() => imgUrl && setSelectedDocImage(imgUrl)}>
+                          {imgUrl ? (<><img src={imgUrl} alt={req.product.titleId} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-110" /><div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity"><svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" /></svg></div></>) : (<div className="h-full w-full flex items-center justify-center text-[10px] text-neutral-400">No Img</div>)}
+                        </div>
+                        <span className="line-clamp-2">{req.product?.titleId ?? "-"}</span>
+                      </div>
+                    </td>
                     <td className="p-3">{req.durationDays} Hari</td>
                     <td className="p-3 tabular-nums">Rp {req.price.toLocaleString("id-ID")}</td>
                     <td className="p-3">{req.paymentProofUrl ? <a href={req.paymentProofUrl} target="_blank" className="text-blue-600 underline text-xs">Lihat</a> : "-"}</td>
@@ -330,14 +542,26 @@ export default function AdminTabs({
                   <td className="p-3">
                     <div className="flex flex-col gap-2">
                       <img src={b.imageUrl} alt="Banner" className="h-16 w-32 object-cover rounded border cursor-pointer" onClick={() => setSelectedDocImage(b.imageUrl)} />
-                      <a href={b.imageUrl} download={`Banner-${b.company?.name || "Customer"}.jpg`} target="_blank" rel="noopener noreferrer" className="text-xs font-bold text-forest-700 hover:underline flex items-center gap-1 w-fit bg-forest-50 px-2 py-1 rounded border border-forest-200">⬇️ Download Gambar</a>
+                      <a 
+                        href={b.imageUrl} 
+                        download={`Banner-${b.company?.name || "Customer"}.jpg`} 
+                        target="_blank" 
+                        rel="noopener noreferrer" 
+                        className="text-xs font-bold text-forest-700 hover:underline flex items-center gap-1 w-fit bg-forest-50 px-2 py-1 rounded border border-forest-200"
+                      >
+                        ⬇️ Download Gambar
+                      </a>
                     </div>
                   </td>
                   <td className="p-3"><a href={b.paymentProofUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline text-xs">Lihat Bukti</a></td>
                   <td className="p-3"><div className="font-bold">{b.durationDays} Hari</div><div className="text-xs text-forest-700">Rp {b.price?.toLocaleString("id-ID")}</div></td>
                   <td className="p-3 flex flex-col gap-2">
-                    <button onClick={() => handleFinishBanner(b.id)} className="bg-forest-700 text-white px-3 py-1.5 rounded text-xs hover:bg-forest-500 whitespace-nowrap font-bold">✓ Selesai & Hapus Antrean</button>
-                    <button onClick={() => handleRejectBanner(b.id)} className="border border-red-500 text-red-500 px-3 py-1 rounded text-xs hover:bg-red-50 whitespace-nowrap">✕ Tolak / Batal</button>
+                    <button onClick={() => handleFinishBanner(b.id)} className="bg-forest-700 text-white px-3 py-1.5 rounded text-xs hover:bg-forest-500 whitespace-nowrap font-bold">
+                      ✓ Selesai & Hapus Antrean
+                    </button>
+                    <button onClick={() => handleRejectBanner(b.id)} className="border border-red-500 text-red-500 px-3 py-1 rounded text-xs hover:bg-red-50 whitespace-nowrap">
+                      ✕ Tolak / Batal
+                    </button>
                   </td>
                 </tr>
               ))}
@@ -347,10 +571,15 @@ export default function AdminTabs({
         </div>
       )}
 
+      {/* ======================================================== */}
+      {/* TAB 5: KELOLA AKUN */}
+      {/* ======================================================== */}
       {activeTab === "users" && (
         <div className="overflow-x-auto rounded-md border border-neutral-200 dark:border-neutral-800">
           <table className="w-full text-sm text-left">
-            <thead className="bg-neutral-100 dark:bg-neutral-800"><tr><th className="p-3">Nama User</th><th className="p-3">Email</th><th className="p-3">Role</th><th className="p-3">Status</th><th className="p-3">Aksi</th></tr></thead>
+            <thead className="bg-neutral-100 dark:bg-neutral-800">
+              <tr><th className="p-3">Nama User</th><th className="p-3">Email</th><th className="p-3">Role</th><th className="p-3">Status</th><th className="p-3">Aksi</th></tr>
+            </thead>
             <tbody>
               {localUsers.map((u) => (
                 <tr key={u.id} className="border-t border-neutral-200 dark:border-neutral-800">
@@ -358,7 +587,9 @@ export default function AdminTabs({
                   <td className="p-3">{u.email}</td>
                   <td className="p-3"><span className={`px-2 py-0.5 text-xs font-bold rounded-full ${u.role === "SUPPLIER" ? "bg-blue-100 text-blue-700" : "bg-purple-100 text-purple-700"}`}>{u.role}</span></td>
                   <td className="p-3"><span className={`px-2 py-0.5 text-xs font-bold rounded-full ${u.status === "ACTIVE" ? "bg-green-100 text-green-800" : u.status === "SUSPENDED" ? "bg-amber-100 text-amber-800" : "bg-red-100 text-red-800"}`}>{u.status}</span></td>
-                  <td className="p-3"><button onClick={() => { setActionUser(u); setActionType(u.status === "ACTIVE" ? "SUSPENDED" : "ACTIVE"); setSuspendReason(""); }} className="text-forest-700 hover:underline dark:text-lime-400 font-medium text-xs whitespace-nowrap">Ubah Status</button></td>
+                  <td className="p-3">
+                    <button onClick={() => { setActionUser(u); setActionType(u.status === "ACTIVE" ? "SUSPENDED" : "ACTIVE"); setSuspendReason(""); }} className="text-forest-700 hover:underline dark:text-lime-400 font-medium text-xs whitespace-nowrap">Ubah Status</button>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -366,6 +597,9 @@ export default function AdminTabs({
         </div>
       )}
 
+      {/* ======================================================== */}
+      {/* TAB 6: KELOLA BANNER ADMIN (DENGAN CROP 16:9) */}
+      {/* ======================================================== */}
       {activeTab === "banners" && (
         <div className="grid gap-6 md:grid-cols-[1fr_2fr]">
           <div className="rounded-md border border-neutral-200 bg-white p-5 dark:border-neutral-800 dark:bg-neutral-900 h-fit">
@@ -400,6 +634,7 @@ export default function AdminTabs({
               </div>
             </form>
           </div>
+
           <div className="rounded-md border border-neutral-200 bg-white p-5 dark:border-neutral-800 dark:bg-neutral-900">
             <h3 className="font-bold text-lg mb-4">Daftar Banner Carousel (Tayang)</h3>
             {loadingBanners ? <p className="text-sm text-neutral-500">Memuat...</p> : banners.length === 0 ? <p className="text-sm text-neutral-500">Belum ada banner.</p> : (
@@ -420,11 +655,22 @@ export default function AdminTabs({
         </div>
       )}
 
+      {/* ======================================================== */}
+      {/* TAB 7: LAPORAN KONSUMEN */}
+      {/* ======================================================== */}
       {activeTab === "reports" && (
         <div className="overflow-x-auto rounded-md border border-neutral-200 dark:border-neutral-800">
           <table className="w-full text-sm text-left">
             <thead className="bg-neutral-100 dark:bg-neutral-800">
-              <tr><th className="p-3">Tanggal</th><th className="p-3">Nama / Email</th><th className="p-3">Kategori</th><th className="p-3">Subjek</th><th className="p-3">Pesan</th><th className="p-3">Status</th><th className="p-3">Aksi</th></tr>
+              <tr>
+                <th className="p-3">Tanggal</th>
+                <th className="p-3">Nama / Email</th>
+                <th className="p-3">Kategori</th>
+                <th className="p-3">Subjek</th>
+                <th className="p-3">Pesan</th>
+                <th className="p-3">Status</th>
+                <th className="p-3">Aksi</th>
+              </tr>
             </thead>
             <tbody>
               {localReports.map((r) => (
@@ -438,15 +684,22 @@ export default function AdminTabs({
                   <td className="p-3">
                     {r.status === "PENDING" ? (
                       <div className="flex flex-col gap-2">
-                        {replyingTo === r.id && (<textarea value={replyText} onChange={(e) => setReplyText(e.target.value)} placeholder="Ketik balasan untuk pelapor..." className="w-full text-xs p-2 border rounded-md min-h-[60px]" />)}
+                        {replyingTo === r.id && (
+                          <textarea value={replyText} onChange={(e) => setReplyText(e.target.value)} placeholder="Ketik balasan untuk pelapor..." className="w-full text-xs p-2 border rounded-md min-h-[60px]" />
+                        )}
                         <div className="flex gap-2">
-                          <button onClick={() => handleUpdateReportStatus(r.id, "RESOLVED")} disabled={updatingReportId === r.id} className="bg-forest-700 hover:bg-forest-500 text-white px-2.5 py-1 rounded text-xs disabled:opacity-50 whitespace-nowrap">{replyingTo === r.id ? "Kirim & Selesai" : "✓ Selesai"}</button>
+                          <button onClick={() => handleUpdateReportStatus(r.id, "RESOLVED")} disabled={updatingReportId === r.id} className="bg-forest-700 hover:bg-forest-500 text-white px-2.5 py-1 rounded text-xs disabled:opacity-50 whitespace-nowrap">
+                            {replyingTo === r.id ? "Kirim & Selesai" : "✓ Selesai"}
+                          </button>
                           {replyingTo === r.id && (<button onClick={() => setReplyingTo(null)} className="border border-neutral-300 text-neutral-600 hover:bg-neutral-100 px-2.5 py-1 rounded text-xs">Batal</button>)}
                           {replyingTo !== r.id && (<button onClick={() => handleUpdateReportStatus(r.id, "REJECTED")} disabled={updatingReportId === r.id} className="border border-neutral-300 text-neutral-600 hover:bg-neutral-100 px-2.5 py-1 rounded text-xs disabled:opacity-50 whitespace-nowrap">✕ Tolak</button>)}
                         </div>
                       </div>
                     ) : (
-                      <div className="flex flex-col gap-1"><span className="text-xs text-neutral-400 italic">Sudah ditangani</span>{r.adminReply && (<span className="text-[10px] text-forest-700 bg-forest-50 p-1 rounded">Balasan: {r.adminReply}</span>)}</div>
+                      <div className="flex flex-col gap-1">
+                        <span className="text-xs text-neutral-400 italic">Sudah ditangani</span>
+                        {r.adminReply && (<span className="text-[10px] text-forest-700 bg-forest-50 p-1 rounded">Balasan: {r.adminReply}</span>)}
+                      </div>
                     )}
                   </td>
                 </tr>
@@ -457,23 +710,37 @@ export default function AdminTabs({
         </div>
       )}
 
+      {/* ======================================================== */}
+      {/* MODAL CROP GAMBAR BANNER (ADMIN MANUAL) */}
+      {/* ======================================================== */}
       {isCropping && imageSrc && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/90 p-4 backdrop-blur-sm">
           <div className="bg-white dark:bg-neutral-900 rounded-xl overflow-hidden w-full max-w-3xl flex flex-col shadow-2xl">
-            <div className="p-4 border-b border-neutral-200 dark:border-neutral-800 flex justify-between items-center"><h3 className="font-bold text-lg">Sesuaikan Posisi Banner (16:9)</h3></div>
-            <div className="relative w-full h-[400px] bg-neutral-800"><Cropper image={imageSrc} crop={crop} zoom={zoom} aspect={16 / 9} onCropChange={setCrop} onCropComplete={(_, croppedPixels) => setCroppedAreaPixels(croppedPixels)} onZoomChange={setZoom} /></div>
+            <div className="p-4 border-b border-neutral-200 dark:border-neutral-800 flex justify-between items-center">
+              <h3 className="font-bold text-lg">Sesuaikan Posisi Banner (16:9)</h3>
+            </div>
+            <div className="relative w-full h-[400px] bg-neutral-800">
+              <Cropper image={imageSrc} crop={crop} zoom={zoom} aspect={16 / 9} onCropChange={setCrop} onCropComplete={(_, croppedPixels) => setCroppedAreaPixels(croppedPixels)} onZoomChange={setZoom} />
+            </div>
             <div className="p-4 space-y-4">
               <input type="range" value={zoom} min={1} max={3} step={0.1} onChange={(e) => setZoom(Number(e.target.value))} className="w-full accent-forest-700" />
-              <div className="flex justify-end gap-3"><button type="button" onClick={() => { setIsCropping(false); setImageSrc(null); }} className="px-4 py-2 text-sm font-medium text-neutral-600 bg-neutral-100 rounded-md">Batal</button><button type="button" onClick={handleSaveCrop} className="px-6 py-2 text-sm font-bold text-white bg-forest-700 rounded-md">Terapkan & Simpan</button></div>
+              <div className="flex justify-end gap-3">
+                <button type="button" onClick={() => { setIsCropping(false); setImageSrc(null); }} className="px-4 py-2 text-sm font-medium text-neutral-600 bg-neutral-100 rounded-md">Batal</button>
+                <button type="button" onClick={handleSaveCrop} className="px-6 py-2 text-sm font-bold text-white bg-forest-700 rounded-md">Terapkan & Simpan</button>
+              </div>
             </div>
           </div>
         </div>
       )}
 
+      {/* MODAL REVIEW VERIFIKASI PERUSAHAAN */}
       {reviewCompany && (
         <div className="fixed inset-0 z-[9998] flex items-center justify-center bg-black/60 p-4 backdrop-blur-md">
           <div className="bg-white dark:bg-neutral-950 rounded-2xl shadow-2xl w-full max-w-5xl max-h-[90vh] flex flex-col overflow-hidden border border-neutral-200 dark:border-neutral-800">
-            <div className="flex justify-between items-center p-5 border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900/50"><div><h3 className="font-display font-bold text-xl text-forest-900 dark:text-white">Review Verifikasi: {reviewCompany.name}</h3></div><button onClick={() => setReviewCompany(null)} className="text-neutral-400 hover:text-red-500 transition-colors p-2"><svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg></button></div>
+            <div className="flex justify-between items-center p-5 border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900/50">
+              <div><h3 className="font-display font-bold text-xl text-forest-900 dark:text-white">Review Verifikasi: {reviewCompany.name}</h3></div>
+              <button onClick={() => setReviewCompany(null)} className="text-neutral-400 hover:text-red-500 transition-colors p-2"><svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg></button>
+            </div>
             <div className="flex-1 overflow-y-auto flex flex-col lg:flex-row">
               <div className="lg:w-1/3 bg-neutral-50 dark:bg-neutral-900/30 p-6 border-b lg:border-b-0 lg:border-r border-neutral-200 dark:border-neutral-800">
                 <h4 className="font-bold text-sm text-neutral-500 uppercase tracking-wider mb-4">Informasi Perusahaan</h4>
@@ -494,41 +761,71 @@ export default function AdminTabs({
                         <div className="flex flex-wrap gap-3">
                           {doc.files.map((file: any, j: number) => (
                             <div key={j} className="relative h-16 w-24 rounded-lg overflow-hidden border border-neutral-200 bg-neutral-50 group cursor-pointer">
-                              {file.isPdf ? (<a href={file.url} target="_blank" rel="noopener noreferrer" className="flex flex-col items-center justify-center h-full w-full hover:bg-red-50 transition-colors"><span className="text-red-500 font-bold text-sm">PDF</span><span className="text-[9px] text-neutral-500">Buka File</span></a>) : (<><img src={file.url} alt={doc.label} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110" onClick={() => setSelectedDocImage(file.url)} /><div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity pointer-events-none"><svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" /></svg></div></>)}
+                              {file.isPdf ? (
+                                <a href={file.url} target="_blank" rel="noopener noreferrer" className="flex flex-col items-center justify-center h-full w-full hover:bg-red-50 transition-colors"><span className="text-red-500 font-bold text-sm">PDF</span><span className="text-[9px] text-neutral-500">Buka File</span></a>
+                              ) : (
+                                <><img src={file.url} alt={doc.label} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110" onClick={() => setSelectedDocImage(file.url)} /><div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity pointer-events-none"><svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" /></svg></div></>
+                              )}
                             </div>
                           ))}
                         </div>
                       </div>
                     ))}
                   </div>
-                ) : (<div className="flex flex-col items-center justify-center py-16 bg-neutral-50 dark:bg-neutral-900/30 border-2 border-dashed border-neutral-300 dark:border-neutral-700 rounded-xl text-center"><p className="font-bold text-neutral-500 mb-2">Data Dokumen Tidak Ditemukan</p><p className="text-xs text-neutral-400">Pengajuan lama (sebelum pembaruan sistem).</p></div>)}
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-16 bg-neutral-50 dark:bg-neutral-900/30 border-2 border-dashed border-neutral-300 dark:border-neutral-700 rounded-xl text-center"><p className="font-bold text-neutral-500 mb-2">Data Dokumen Tidak Ditemukan</p><p className="text-xs text-neutral-400">Pengajuan lama (sebelum pembaruan sistem).</p></div>
+                )}
               </div>
             </div>
             <div className="p-5 border-t border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 flex flex-col sm:flex-row justify-between items-center gap-4">
               <div className="w-full sm:w-1/2"><input type="text" placeholder="Alasan penolakan (wajib diisi jika menolak)..." value={rejectReason} onChange={(e) => setRejectReason(e.target.value)} className="w-full h-11 rounded-lg border-neutral-300 border px-4 text-sm focus:ring-2 focus:ring-forest-700 focus:border-forest-700 transition-all dark:bg-neutral-900 dark:border-neutral-700" /></div>
-              <div className="flex gap-3 w-full sm:w-auto"><button onClick={() => handleVerify("reject")} disabled={processing} className="flex-1 sm:flex-none px-6 py-2.5 text-sm font-bold text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg transition-colors">Tolak</button><button onClick={() => handleVerify("approve")} disabled={processing} className="flex-1 sm:flex-none px-6 py-2.5 text-sm font-bold text-white bg-forest-700 hover:bg-forest-500 rounded-lg transition-colors shadow-md">{processing ? "Memproses..." : "Setujui Verifikasi"}</button></div>
+              <div className="flex gap-3 w-full sm:w-auto">
+                <button onClick={() => handleVerify("reject")} disabled={processing} className="flex-1 sm:flex-none px-6 py-2.5 text-sm font-bold text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg transition-colors">Tolak</button>
+                <button onClick={() => handleVerify("approve")} disabled={processing} className="flex-1 sm:flex-none px-6 py-2.5 text-sm font-bold text-white bg-forest-700 hover:bg-forest-500 rounded-lg transition-colors shadow-md">{processing ? "Memproses..." : "Setujui Verifikasi"}</button>
+              </div>
             </div>
           </div>
         </div>
       )}
 
+      {/* MODAL SUSPEND/BAN USER */}
       {actionUser && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
           <div className="bg-white dark:bg-neutral-900 rounded-xl shadow-2xl p-6 w-full max-w-md border border-neutral-200 dark:border-neutral-800">
             <h3 className="font-bold text-xl mb-4">Ubah Status Akun</h3>
             <p className="text-sm text-neutral-500 mb-4">User: <strong>{actionUser.email}</strong></p>
             <div className="space-y-4">
-              <div><label className="text-sm font-medium block mb-1">Pilih Status</label><select value={actionType} onChange={(e) => setActionType(e.target.value as any)} className="w-full h-10 rounded-md border px-3 text-sm dark:bg-neutral-800 dark:border-neutral-700"><option value="ACTIVE">Aktifkan Kembali (ACTIVE)</option><option value="SUSPENDED">Skorsing Sementara (SUSPENDED)</option><option value="BANNED">Blokir Permanen (BANNED)</option></select></div>
-              {actionType !== "ACTIVE" && (<div><label className="text-sm font-medium block mb-1">Alasan (Wajib)</label><textarea value={suspendReason} onChange={(e) => setSuspendReason(e.target.value)} rows={3} placeholder="Contoh: Terbukti melakukan penipuan..." className="w-full rounded-md border p-3 text-sm dark:bg-neutral-800 dark:border-neutral-700" /><p className="text-xs text-red-500 mt-1">*Alasan ini akan muncul di layar login user.</p></div>)}
-              <div className="flex justify-end gap-2 mt-6"><button type="button" onClick={() => setActionUser(null)} className="px-4 py-2 text-sm font-medium text-neutral-600 hover:bg-neutral-100 rounded-md">Batal</button><button type="button" onClick={handleUpdateStatus} disabled={savingUser} className={`px-4 py-2 text-sm font-medium text-white rounded-md disabled:opacity-50 ${actionType === "ACTIVE" ? "bg-green-600 hover:bg-green-700" : "bg-red-600 hover:bg-red-700"}`}>{savingUser ? "Menyimpan..." : "Simpan Perubahan"}</button></div>
+              <div>
+                <label className="text-sm font-medium block mb-1">Pilih Status</label>
+                <select value={actionType} onChange={(e) => setActionType(e.target.value as any)} className="w-full h-10 rounded-md border px-3 text-sm dark:bg-neutral-800 dark:border-neutral-700">
+                  <option value="ACTIVE">Aktifkan Kembali (ACTIVE)</option>
+                  <option value="SUSPENDED">Skorsing Sementara (SUSPENDED)</option>
+                  <option value="BANNED">Blokir Permanen (BANNED)</option>
+                </select>
+              </div>
+              {actionType !== "ACTIVE" && (
+                <div>
+                  <label className="text-sm font-medium block mb-1">Alasan (Wajib)</label>
+                  <textarea value={suspendReason} onChange={(e) => setSuspendReason(e.target.value)} rows={3} placeholder="Contoh: Terbukti melakukan penipuan..." className="w-full rounded-md border p-3 text-sm dark:bg-neutral-800 dark:border-neutral-700" />
+                  <p className="text-xs text-red-500 mt-1">*Alasan ini akan muncul di layar login user.</p>
+                </div>
+              )}
+              <div className="flex justify-end gap-2 mt-6">
+                <button type="button" onClick={() => setActionUser(null)} className="px-4 py-2 text-sm font-medium text-neutral-600 hover:bg-neutral-100 rounded-md">Batal</button>
+                <button type="button" onClick={handleUpdateStatus} disabled={savingUser} className={`px-4 py-2 text-sm font-medium text-white rounded-md disabled:opacity-50 ${actionType === "ACTIVE" ? "bg-green-600 hover:bg-green-700" : "bg-red-600 hover:bg-red-700"}`}>{savingUser ? "Menyimpan..." : "Simpan Perubahan"}</button>
+              </div>
             </div>
           </div>
         </div>
       )}
 
+      {/* LIGHTBOX ZOOM GAMBAR */}
       {selectedDocImage && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/95 p-4 backdrop-blur-sm" onClick={() => setSelectedDocImage(null)}>
-          <div className="relative max-w-5xl max-h-[95vh]"><img src={selectedDocImage} alt="Zoom" className="max-w-full max-h-[95vh] object-contain rounded-md" /><button onClick={(e) => { e.stopPropagation(); setSelectedDocImage(null); }} className="absolute -top-12 right-0 text-white bg-white/10 hover:bg-white/20 rounded-full h-10 w-10 flex items-center justify-center text-xl font-bold transition-colors">✕</button></div>
+          <div className="relative max-w-5xl max-h-[95vh]">
+            <img src={selectedDocImage} alt="Zoom" className="max-w-full max-h-[95vh] object-contain rounded-md" />
+            <button onClick={(e) => { e.stopPropagation(); setSelectedDocImage(null); }} className="absolute -top-12 right-0 text-white bg-white/10 hover:bg-white/20 rounded-full h-10 w-10 flex items-center justify-center text-xl font-bold transition-colors">✕</button>
+          </div>
         </div>
       )}
     </div>
