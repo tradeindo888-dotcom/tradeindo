@@ -22,21 +22,25 @@ export default function AdminTabs({
 }) {
   const [activeTab, setActiveTab] = useState<"subscriptions" | "companies" | "sponsors" | "users" | "banners" | "pending_banners" | "reports" | "ad_revenue" | "sub_revenue" | "total_revenue" | "user_growth">("subscriptions");
   
+  // State Modal Verifikasi
   const [reviewCompany, setReviewCompany] = useState<any>(null);
   const [selectedDocImage, setSelectedDocImage] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState("");
   const [processing, setProcessing] = useState(false);
   
+  // State Lokal
   const [localCompanies, setLocalCompanies] = useState(companies);
   const [localUsers, setLocalUsers] = useState(users);
   const [localPendingBanners, setLocalPendingBanners] = useState(pendingBanners);
   const [localReports, setLocalReports] = useState(consumerReports);
   
+  // State Suspend/Ban
   const [actionUser, setActionUser] = useState<any>(null);
   const [actionType, setActionType] = useState<"ACTIVE" | "SUSPENDED" | "BANNED">("SUSPENDED");
   const [suspendReason, setSuspendReason] = useState("");
   const [savingUser, setSavingUser] = useState(false);
 
+  // State Banner Admin
   const [banners, setBanners] = useState<any[]>([]);
   const [loadingBanners, setLoadingBanners] = useState(false);
   const [editBannerId, setEditBannerId] = useState<string | null>(null); 
@@ -48,12 +52,14 @@ export default function AdminTabs({
   const [bannerDuration, setBannerDuration] = useState(30);
   const [uploadingBanner, setUploadingBanner] = useState(false);
 
+  // State Crop Gambar
   const [imageSrc, setImageSrc] = useState<string | null>(null);
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<any>(null);
   const [isCropping, setIsCropping] = useState(false);
 
+  // State untuk Laporan Konsumen
   const [updatingReportId, setUpdatingReportId] = useState<string | null>(null);
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [replyText, setReplyText] = useState("");
@@ -78,6 +84,7 @@ export default function AdminTabs({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
+  // --- FUNGSI CROP & UPLOAD BANNER (ADMIN) ---
   const handleBannerFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]; if (!file) return;
     setImageSrc(URL.createObjectURL(file)); setIsCropping(true); e.target.value = ""; 
@@ -151,6 +158,7 @@ export default function AdminTabs({
     try { const res = await fetch(`/api/admin/banners/${id}`, { method: "DELETE" }); if (!res.ok) throw new Error(); toast.success("Banner dihapus."); setBanners(prev => prev.filter(b => b.id !== id)); } catch (err) { toast.error("Gagal menghapus."); }
   }
 
+  // --- FUNGSI PERSETUJUAN BANNER CUSTOMER ---
   async function handleFinishBanner(id: string) {
     if (!confirm("Tandai antrean ini selesai dan hapus? Pastikan Anda SUDAH mengunggah banner buatan customer di tab 'Kelola Banner'.")) return;
     try { 
@@ -166,6 +174,7 @@ export default function AdminTabs({
     try { const res = await fetch(`/api/admin/banners/${id}`, { method: "DELETE" }); if (!res.ok) throw new Error(); toast.success("Pengajuan iklan ditolak."); setLocalPendingBanners(prev => prev.filter(b => b.id !== id)); } catch (err) { toast.error("Gagal menolak."); }
   }
 
+  // --- FUNGSI VERIFIKASI & SUSPEND ---
   async function handleVerify(action: "approve" | "reject") {
     if (action === "reject" && rejectReason.length < 5) return toast.error("Alasan wajib diisi.");
     setProcessing(true);
@@ -188,6 +197,7 @@ export default function AdminTabs({
     } catch (err) { toast.error("Gagal mengubah status."); } finally { setSavingUser(false); }
   }
 
+  // --- FUNGSI UPDATE LAPORAN KONSUMEN ---
   async function handleUpdateReportStatus(id: string, newStatus: "RESOLVED" | "REJECTED") {
     if (replyingTo !== id) { setReplyingTo(id); setReplyText(""); return; }
     setUpdatingReportId(id);
@@ -208,7 +218,7 @@ export default function AdminTabs({
     }
   }
 
-  // --- FUNGSI HAPUS LAPORAN (BARU) ---
+  // --- FUNGSI HAPUS LAPORAN ---
   async function handleDeleteReport(id: string) {
     if (!confirm("Apakah Anda yakin ingin menghapus laporan ini secara permanen?")) return;
     try {
@@ -227,9 +237,12 @@ export default function AdminTabs({
 
   return (
     <div className="mt-2">
+      {/* BANNER TOTAL PENERIMAAN */}
       <div className="bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-700 rounded-xl p-5 text-white shadow-lg mb-6 flex flex-col md:flex-row justify-between items-center gap-4">
         <div>
-          <h2 className="text-lg font-bold text-indigo-50 flex items-center gap-2">💰 Total Penerimaan Bulan Ini</h2>
+          <h2 className="text-lg font-bold text-indigo-50 flex items-center gap-2">
+            💰 Total Penerimaan Bulan Ini
+          </h2>
           <p className="text-sm text-indigo-200">Gabungan dari Pendapatan Iklan + Langganan</p>
         </div>
         <div className="text-3xl font-black tabular-nums bg-white/10 px-6 py-2 rounded-lg border border-white/20">
@@ -237,6 +250,7 @@ export default function AdminTabs({
         </div>
       </div>
 
+      {/* TOMBOL TAB */}
       <div className="flex border-b border-neutral-200 dark:border-neutral-800 mb-4 overflow-x-auto">
         <button onClick={() => setActiveTab("subscriptions")} className={`px-4 py-2 text-sm font-medium border-b-2 whitespace-nowrap ${activeTab === "subscriptions" ? "border-forest-700 text-forest-700 dark:border-lime-400 dark:text-lime-400" : "border-transparent text-neutral-500"}`}>Langganan ({subscriptions.length})</button>
         <button onClick={() => setActiveTab("companies")} className={`px-4 py-2 text-sm font-medium border-b-2 whitespace-nowrap ${activeTab === "companies" ? "border-forest-700 text-forest-700 dark:border-lime-400 dark:text-lime-400" : "border-transparent text-neutral-500"}`}>Verifikasi PT ({localCompanies.length})</button>
@@ -251,7 +265,7 @@ export default function AdminTabs({
         <button onClick={() => setActiveTab("user_growth")} className={`px-4 py-2 text-sm font-medium border-b-2 whitespace-nowrap ${activeTab === "user_growth" ? "border-purple-600 text-purple-600 dark:border-purple-400 dark:text-purple-400" : "border-transparent text-neutral-500"}`}>👥 Pertumbuhan User</button>
       </div>
 
-      {/* SISA TAB LAINNYA TETAP SAMA SEPERTI SEBELUMNYA */}
+      {/* TAB 1: LANGGANAN (SUDAH DIPERBAIKI returnTo) */}
       {activeTab === "subscriptions" && (
         <div className="overflow-x-auto rounded-md border border-neutral-200 dark:border-neutral-800">
           <table className="w-full text-sm text-left">
@@ -266,8 +280,18 @@ export default function AdminTabs({
                   <td className="p-3">{new Date(req.createdAt).toLocaleDateString("id-ID")}</td>
                   <td className="p-3">{req.paymentProofUrl ? <a href={req.paymentProofUrl} target="_blank" className="text-blue-600 underline text-xs">Lihat</a> : "-"}</td>
                   <td className="p-3 flex gap-2">
-                    <form action="/api/admin/verify-subscription" method="POST"><input type="hidden" name="requestId" value={req.id} /><input type="hidden" name="action" value="approve" /><button className="bg-forest-700 px-3 py-1 text-white text-xs rounded hover:bg-forest-500">Setujui</button></form>
-                    <form action="/api/admin/verify-subscription" method="POST"><input type="hidden" name="requestId" value={req.id} /><input type="hidden" name="action" value="reject" /><button className="border border-red-500 text-red-500 px-3 py-1 text-xs rounded hover:bg-red-50">Tolak</button></form>
+                    <form action="/api/admin/verify-subscription" method="POST">
+                      <input type="hidden" name="requestId" value={req.id} />
+                      <input type="hidden" name="action" value="approve" />
+                      <input type="hidden" name="returnTo" value={`/${lang}/admin`} />
+                      <button className="bg-forest-700 px-3 py-1 text-white text-xs rounded hover:bg-forest-500">Setujui</button>
+                    </form>
+                    <form action="/api/admin/verify-subscription" method="POST">
+                      <input type="hidden" name="requestId" value={req.id} />
+                      <input type="hidden" name="action" value="reject" />
+                      <input type="hidden" name="returnTo" value={`/${lang}/admin`} />
+                      <button className="border border-red-500 text-red-500 px-3 py-1 text-xs rounded hover:bg-red-50">Tolak</button>
+                    </form>
                   </td>
                 </tr>
               ))}
@@ -277,6 +301,7 @@ export default function AdminTabs({
         </div>
       )}
 
+      {/* TAB 2: VERIFIKASI PT */}
       {activeTab === "companies" && (
         <div className="overflow-x-auto rounded-md border border-neutral-200 dark:border-neutral-800">
           <table className="w-full text-sm text-left">
@@ -301,6 +326,7 @@ export default function AdminTabs({
         </div>
       )}
 
+      {/* TAB 3: IKLAN PRODUK */}
       {activeTab === "sponsors" && (
         <div className="overflow-x-auto rounded-md border border-neutral-200 dark:border-neutral-800">
           <table className="w-full text-sm text-left">
@@ -344,6 +370,7 @@ export default function AdminTabs({
         </div>
       )}
 
+      {/* TAB 4: PERSETUJUAN IKLAN BANNER */}
       {activeTab === "pending_banners" && (
         <div className="overflow-x-auto rounded-md border border-neutral-200 dark:border-neutral-800">
           <div className="bg-blue-50 text-blue-800 p-4 text-sm dark:bg-blue-900/30 dark:text-blue-300 border-b dark:border-neutral-800">
@@ -394,6 +421,7 @@ export default function AdminTabs({
         </div>
       )}
 
+      {/* TAB 5: KELOLA AKUN */}
       {activeTab === "users" && (
         <div className="overflow-x-auto rounded-md border border-neutral-200 dark:border-neutral-800">
           <table className="w-full text-sm text-left">
@@ -417,6 +445,7 @@ export default function AdminTabs({
         </div>
       )}
 
+      {/* TAB 6: KELOLA BANNER ADMIN */}
       {activeTab === "banners" && (
         <div className="grid gap-6 md:grid-cols-[1fr_2fr]">
           <div className="rounded-md border border-neutral-200 bg-white p-5 dark:border-neutral-800 dark:bg-neutral-900 h-fit">
@@ -482,9 +511,7 @@ export default function AdminTabs({
         </div>
       )}
 
-      {/* ======================================================== */}
-      {/* TAB LAPORAN KONSUMEN (DENGAN TOMBOL DELETE) */}
-      {/* ======================================================== */}
+      {/* TAB 7: LAPORAN KONSUMEN */}
       {activeTab === "reports" && (
         <div className="overflow-x-auto rounded-md border border-neutral-200 dark:border-neutral-800">
           <table className="w-full text-sm text-left">
@@ -575,7 +602,6 @@ export default function AdminTabs({
                         </div>
                       )}
                       
-                      {/* TOMBOL DELETE BARU */}
                       <button
                         onClick={() => handleDeleteReport(r.id)}
                         className="text-xs text-red-600 border border-red-200 bg-red-50 hover:bg-red-100 px-2.5 py-1 rounded whitespace-nowrap w-fit transition-colors"

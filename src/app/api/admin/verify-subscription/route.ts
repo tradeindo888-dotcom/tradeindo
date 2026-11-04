@@ -3,32 +3,19 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
-// Durasi paket (dalam hari)
-const PLAN_DURATIONS: Record<string, number> = {
-  PRO: 30,
-  PREMIUM: 30,
-  ENTERPRISE: 365,
-  FREE: 0, // FREE tidak punya expiresAt
-};
-
-// Batas produk per paket
-const PLAN_LIMITS: Record<string, number> = {
-  FREE: 10,
-  PRO: 100,
-  PREMIUM: 500,
-  ENTERPRISE: 99999,
-};
+const PLAN_DURATIONS: Record<string, number> = { PRO: 30, PREMIUM: 30, ENTERPRISE: 365, FREE: 0 };
+const PLAN_LIMITS: Record<string, number> = { FREE: 10, PRO: 100, PREMIUM: 500, ENTERPRISE: 99999 };
 
 export async function POST(req: Request) {
   const session = await getServerSession(authOptions);
   if (!session?.user || (session.user as any).role !== "ADMIN") {
-    return NextResponse.redirect(new URL("/login", req.url));
+    return NextResponse.redirect(new URL("/id/login", req.url));
   }
 
   const form = await req.formData();
   const requestId = String(form.get("requestId"));
   const action = String(form.get("action"));
-  const returnTo = String(form.get("returnTo") ?? "/id/admin");
+  const returnTo = String(form.get("returnTo") ?? "/id/admin"); // Default redirect
 
   const request = await prisma.subscriptionRequest.findUnique({ 
     where: { id: requestId },
@@ -53,11 +40,8 @@ export async function POST(req: Request) {
   const durationDays = PLAN_DURATIONS[requestedPlan] ?? 30;
   const newLimit = PLAN_LIMITS[requestedPlan] ?? 10;
 
-  // Tentukan tanggal berakhir baru
   let newExpiresAt: Date | null = null;
   if (requestedPlan !== "FREE") {
-    // Jika paket saat ini masih aktif, extend dari tanggal lama
-    // Jika sudah expired (di grace period), mulai dari sekarang
     let baseDate = now;
     if (request.company.planExpiresAt && request.company.planExpiresAt > now) {
       baseDate = request.company.planExpiresAt;
@@ -67,27 +51,18 @@ export async function POST(req: Request) {
 
   try {
     await prisma.$transaction(async (tx) => {
-      // 1. Update request status
       await tx.subscriptionRequest.update({ 
         where: { id: requestId }, 
         data: { status: "APPROVED" } 
       });
 
-      // 2. Update company plan, planStartedAt, planExpiresAt
       await tx.company.update({ 
         where: { id: request.companyId }, 
-        data: { 
-          plan: requestedPlan as any,
-          planStartedAt: now,
-          planExpiresAt: newExpiresAt,
-        } 
+        data: { plan: requestedPlan as any, planStartedAt: now, planExpiresAt: newExpiresAt } 
       });
 
-      // 3. Kembalikan produk HIDDEN ke ACTIVE (jika ada slot kosong)
-      const activeCount = await tx.product.count({
-        where: { companyId: request.companyId, status: "ACTIVE" },
-      });
-
+      // Restore hidden products
+      const activeCount = await tx.product.count({ where: { companyId: request.companyId, status: "ACTIVE" } });
       const slotsAvailable = newLimit - activeCount;
       if (slotsAvailable > 0) {
         const hiddenProducts = await tx.product.findMany({
@@ -95,7 +70,6 @@ export async function POST(req: Request) {
           orderBy: { createdAt: "desc" },
           take: slotsAvailable,
         });
-
         if (hiddenProducts.length > 0) {
           await tx.product.updateMany({
             where: { id: { in: hiddenProducts.map((p) => p.id) } },
@@ -104,31 +78,31 @@ export async function POST(req: Request) {
         }
       }
 
-      // 4. Batalkan request PENDING lain (jika supplier iseng membuat banyak)
+      // Reject other pending requests
       await tx.subscriptionRequest.updateMany({
-        where: {
-          companyId: request.companyId,
-          status: "PENDING",
-          id: { not: requestId },
-        },
+        where: { companyId: request.companyId, status: "PENDING", id: { not: requestId } },
         data: { status: "REJECTED" },
       });
 
-      // 5. Audit Log
-      await tx.auditLog.create({
-        data: {
-          action: "subscription.approve",
-          entity: "Company",
-          entityId: request.companyId,
-          metadata: {
-            previousPlan: request.company.plan,
-            newPlan: requestedPlan,
-            durationDays,
-            newExpiresAt: newExpiresAt?.toISOString() ?? null,
-            restoredProducts: slotsAvailable,
+      // Audit Log (Dibungkus try-catch agar jika gagal, transaksi tetap jalan)
+      try {
+        await tx.auditLog.create({
+          data: {
+            action: "subscription.approve",
+            entity: "Company",
+            entityId: request.companyId,
+            metadata: {
+              previousPlan: request.company.plan,
+              newPlan: requestedPlan,
+              durationDays,
+              newExpiresAt: newExpiresAt?.toISOString() ?? null,
+              restoredProducts: slotsAvailable,
+            },
           },
-        },
-      });
+        });
+      } catch (logError) {
+        console.error("Gagal mencatat audit log:", logError);
+      }
     });
 
     return NextResponse.redirect(new URL(returnTo, req.url), { status: 303 });
