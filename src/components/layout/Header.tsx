@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { signOut, useSession } from "next-auth/react";
 import { usePathname } from "next/navigation";
@@ -43,14 +43,10 @@ export function Header({ lang, t }: { lang: string, t: any }) {
       <div className="mx-auto flex max-w-content items-center gap-4 px-4 py-3">
         <Link
           href={`/${lang}`}
-          onClick={(e) => {
-            e.preventDefault();
-            window.location.href = `/${lang}`;
-          }}
           className="group flex items-center gap-2 transition-all duration-300 hover:scale-105 hover:drop-shadow-md shrink-0 cursor-pointer"
         >
           <img
-            src="/tradeindo.png"
+            src="/tradeindo.png" // PASTIKAN NAMA FILE DI FOLDER PUBLIC PERSIS SEPERTI INI
             alt="Trade Indo Logo"
             className="h-10 w-auto object-contain transition-transform duration-300 group-hover:scale-110"
           />
@@ -68,7 +64,10 @@ export function Header({ lang, t }: { lang: string, t: any }) {
         </form>
 
         <div className="ml-auto flex items-center gap-2">
-          <LanguageToggle currentLang={lang} />
+          {/* SUSPENSE WAJIB UNTUK LANGUAGETOGGLE AGAR TIDAK HYDRATION ERROR */}
+          <Suspense fallback={<div className="h-9 w-16 bg-neutral-200 animate-pulse rounded-md"></div>}>
+            <LanguageToggle currentLang={lang} />
+          </Suspense>
 
           {session?.user ? (
             <>
@@ -143,51 +142,13 @@ export function Header({ lang, t }: { lang: string, t: any }) {
 
       <nav className="border-t border-neutral-200 dark:border-neutral-800">
         <div className="mx-auto flex max-w-content items-center gap-2 overflow-x-auto px-4 py-2 text-sm">
-          <Link
-            href={`/${lang}/products`}
-            className="rounded-md px-3 py-1.5 font-medium text-forest-700 transition-all duration-300 hover:scale-105 hover:bg-forest-700/10 hover:shadow-md hover:shadow-forest-700/20 dark:text-lime-400 dark:hover:bg-lime-400/10"
-          >
-            {t.products}
-          </Link>
-          <Link
-            href={`/${lang}/suppliers`}
-            className="rounded-md px-3 py-1.5 text-neutral-700 transition-all duration-300 hover:scale-105 hover:bg-forest-700/10 hover:text-forest-700 hover:shadow-md hover:shadow-forest-700/20 dark:text-neutral-300 dark:hover:bg-lime-400/10 dark:hover:text-lime-400"
-          >
-            {t.suppliers}
-          </Link>
-
-          {/* Menu RFQ: Buyer, Supplier, Admin semuanya bisa akses */}
-          <Link
-            href={`/${lang}/rfqs`}
-            className="rounded-md px-3 py-1.5 text-neutral-700 transition-all duration-300 hover:scale-105 hover:bg-forest-700/10 hover:text-forest-700 hover:shadow-md hover:shadow-forest-700/20 dark:text-neutral-300 dark:hover:bg-lime-400/10 dark:hover:text-lime-400"
-          >
-            {t.rfq}
-          </Link>
-
-          <Link
-            href={`/${lang}/services`}
-            className="rounded-md px-3 py-1.5 text-neutral-700 transition-all duration-300 hover:scale-105 hover:bg-forest-700/10 hover:text-forest-700 hover:shadow-md hover:shadow-forest-700/20 dark:text-neutral-300 dark:hover:bg-lime-400/10 dark:hover:text-lime-400"
-          >
-            {lang === "en" ? "Services & Subscriptions" : "Layanan & Langganan"}
-          </Link>
-          <Link
-            href={`/${lang}/workspace/verification`}
-            className="rounded-md px-3 py-1.5 text-neutral-700 transition-all duration-300 hover:scale-105 hover:bg-forest-700/10 hover:text-forest-700 hover:shadow-md hover:shadow-forest-700/20 dark:text-neutral-300 dark:hover:bg-lime-400/10 dark:hover:text-lime-400"
-          >
-            {lang === "en" ? "Apply for Verification" : "Ajukan Verifikasi"}
-          </Link>
-          <Link
-            href={`/${lang}/consumer-service`}
-            className="rounded-md px-3 py-1.5 text-neutral-700 transition-all duration-300 hover:scale-105 hover:bg-forest-700/10 hover:text-forest-700 hover:shadow-md hover:shadow-forest-700/20 dark:text-neutral-300 dark:hover:bg-lime-400/10 dark:hover:text-lime-400"
-          >
-            {lang === "en" ? "Consumer Service" : "Layanan Konsumen"}
-          </Link>
-          <Link
-            href={`/${lang}/terms`}
-            className="rounded-md px-3 py-1.5 text-neutral-700 transition-all duration-300 hover:scale-105 hover:bg-forest-700/10 hover:text-forest-700 hover:shadow-md hover:shadow-forest-700/20 dark:text-neutral-300 dark:hover:bg-lime-400/10 dark:hover:text-lime-400"
-          >
-            {lang === "en" ? "Terms & Conditions" : "Syarat & Ketentuan"}
-          </Link>
+          <Link href={`/${lang}/products`} className="rounded-md px-3 py-1.5 font-medium text-forest-700 transition-all duration-300 hover:scale-105 hover:bg-forest-700/10 hover:shadow-md hover:shadow-forest-700/20 dark:text-lime-400 dark:hover:bg-lime-400/10">{t.products}</Link>
+          <Link href={`/${lang}/suppliers`} className="rounded-md px-3 py-1.5 text-neutral-700 transition-all duration-300 hover:scale-105 hover:bg-forest-700/10 hover:text-forest-700 hover:shadow-md hover:shadow-forest-700/20 dark:text-neutral-300 dark:hover:bg-lime-400/10 dark:hover:text-lime-400">{t.suppliers}</Link>
+          <Link href={`/${lang}/rfqs`} className="rounded-md px-3 py-1.5 text-neutral-700 transition-all duration-300 hover:scale-105 hover:bg-forest-700/10 hover:text-forest-700 hover:shadow-md hover:shadow-forest-700/20 dark:text-neutral-300 dark:hover:bg-lime-400/10 dark:hover:text-lime-400">{t.rfq}</Link>
+          <Link href={`/${lang}/services`} className="rounded-md px-3 py-1.5 text-neutral-700 transition-all duration-300 hover:scale-105 hover:bg-forest-700/10 hover:text-forest-700 hover:shadow-md hover:shadow-forest-700/20 dark:text-neutral-300 dark:hover:bg-lime-400/10 dark:hover:text-lime-400">{lang === "en" ? "Services & Subscriptions" : "Layanan & Langganan"}</Link>
+          <Link href={`/${lang}/workspace/verification`} className="rounded-md px-3 py-1.5 text-neutral-700 transition-all duration-300 hover:scale-105 hover:bg-forest-700/10 hover:text-forest-700 hover:shadow-md hover:shadow-forest-700/20 dark:text-neutral-300 dark:hover:bg-lime-400/10 dark:hover:text-lime-400">{lang === "en" ? "Apply for Verification" : "Ajukan Verifikasi"}</Link>
+          <Link href={`/${lang}/consumer-service`} className="rounded-md px-3 py-1.5 text-neutral-700 transition-all duration-300 hover:scale-105 hover:bg-forest-700/10 hover:text-forest-700 hover:shadow-md hover:shadow-forest-700/20 dark:text-neutral-300 dark:hover:bg-lime-400/10 dark:hover:text-lime-400">{lang === "en" ? "Consumer Service" : "Layanan Konsumen"}</Link>
+          <Link href={`/${lang}/terms`} className="rounded-md px-3 py-1.5 text-neutral-700 transition-all duration-300 hover:scale-105 hover:bg-forest-700/10 hover:text-forest-700 hover:shadow-md hover:shadow-forest-700/20 dark:text-neutral-300 dark:hover:bg-lime-400/10 dark:hover:text-lime-400">{lang === "en" ? "Terms & Conditions" : "Syarat & Ketentuan"}</Link>
         </div>
       </nav>
     </header>
