@@ -19,7 +19,14 @@ export async function POST(req: Request) {
 
     // @ts-ignore
     const report = await prisma.consumerReport.create({
-      data: { userId: (session?.user as any)?.id || null, name, email, category, subject, message },
+      data: {
+        userId: (session?.user as any)?.id || null,
+        name,
+        email,
+        category,
+        subject,
+        message,
+      },
     });
 
     return NextResponse.json({ success: true, report });
@@ -36,7 +43,10 @@ export async function GET() {
   }
 
   // @ts-ignore
-  const reports = await prisma.consumerReport.findMany({ orderBy: { createdAt: "desc" } });
+  const reports = await prisma.consumerReport.findMany({
+    orderBy: { createdAt: "desc" },
+  });
+
   return NextResponse.json(reports);
 }
 
@@ -54,12 +64,64 @@ export async function PATCH(req: Request) {
       return NextResponse.json({ error: "Data tidak valid" }, { status: 400 });
     }
 
-    // Update database saja (TANPA KIRIM EMAIL)
+    // 1. Update status laporan di database
     // @ts-ignore
-    await prisma.consumerReport.update({
+    const updatedReport = await prisma.consumerReport.update({
       where: { id },
       data: { status, adminReply },
     });
+
+    // 2. Kirim sebagai Pesan Chat (jika pelapor punya akun perusahaan)
+    if (adminReply && String(adminReply).trim().length > 0 && updatedReport.userId) {
+      try {
+        const user = await prisma.user.findUnique({
+          where: { id: updatedReport.userId },
+          select: { companyId: true },
+        });
+
+        if (user && user.companyId) {
+          // Cari atau buat akun perusahaan untuk Admin
+          let adminCompany = await prisma.company.findFirst({ where: { slug: "tradeindo-admin" } });
+          if (!adminCompany) {
+            adminCompany = await prisma.company.create({
+              data: { name: "Admin Trade Indo", slug: "tradeindo-admin", type: "BUYER" },
+            });
+          }
+
+          // Cari atau buat room chat antara Admin dan User
+          let conversation = await prisma.conversation.findFirst({
+            where: {
+              OR: [
+                { buyerCompanyId: user.companyId, supplierCompanyId: adminCompany.id },
+                { buyerCompanyId: adminCompany.id, supplierCompanyId: user.companyId },
+              ],
+            },
+          });
+
+          if (!conversation) {
+            conversation = await prisma.conversation.create({
+              data: {
+                buyerCompanyId: user.companyId,
+                supplierCompanyId: adminCompany.id,
+              },
+            });
+          }
+
+          // Kirim pesannya
+          await prisma.message.create({
+            data: {
+              conversationId: conversation.id,
+              senderId: (session.user as any).id,
+              senderName: "Admin Trade Indo",
+              content: `[Balasan Laporan Konsumen - ${status === "RESOLVED" ? "Selesai" : "Ditolak"}]\n\nSubjek: ${updatedReport.subject}\nBalasan: ${adminReply}`,
+            },
+          });
+        }
+      } catch (chatError) {
+        console.error("Gagal membuat pesan chat admin:", chatError);
+        // Tetap lanjutkan return success meskipun chat gagal
+      }
+    }
 
     return NextResponse.json({ success: true });
   } catch (error) {
