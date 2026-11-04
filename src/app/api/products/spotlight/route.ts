@@ -18,8 +18,8 @@ export async function GET() {
           }
         },
       },
-      orderBy: { approvedAt: "desc" },
-      take: 4, // <-- DIUBAH DARI 3 MENJADI 4
+      orderBy: { approvedAt: "desc" }, // Urutkan dari yang paling baru disetujui
+      // take: 4, <-- BARIS INI KITA HAPUS AGAR TAMPIL SEMUA
     });
 
     const products = spotlightRequests
