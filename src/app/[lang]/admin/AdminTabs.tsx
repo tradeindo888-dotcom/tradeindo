@@ -28,7 +28,8 @@ export default function AdminTabs({
   const [rejectReason, setRejectReason] = useState("");
   const [processing, setProcessing] = useState(false);
   
-  // State Lokal
+  // State Lokal (Untuk Update UI Instan)
+  const [localSubscriptions, setLocalSubscriptions] = useState(subscriptions);
   const [localCompanies, setLocalCompanies] = useState(companies);
   const [localUsers, setLocalUsers] = useState(users);
   const [localPendingBanners, setLocalPendingBanners] = useState(pendingBanners);
@@ -64,6 +65,7 @@ export default function AdminTabs({
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [replyText, setReplyText] = useState("");
 
+  useEffect(() => { setLocalSubscriptions(subscriptions); }, [subscriptions]);
   useEffect(() => { setLocalCompanies(companies); }, [companies]);
   useEffect(() => { setLocalUsers(users); }, [users]);
   useEffect(() => { setLocalPendingBanners(pendingBanners); }, [pendingBanners]);
@@ -83,6 +85,28 @@ export default function AdminTabs({
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
+
+  // --- FUNGSI PERSETUJUAN LANGGANAN (FETCH API) ---
+  async function handleSubscriptionAction(id: string, action: "approve" | "reject") {
+    if (!confirm(`Yakin ingin ${action === "approve" ? "Menyetujui" : "Menolak"} pengajuan ini?`)) return;
+    
+    try {
+      const res = await fetch("/api/admin/verify-subscription", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ requestId: id, action })
+      });
+      
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Gagal memproses");
+      
+      toast.success(action === "approve" ? "Langganan berhasil disetujui!" : "Langganan ditolak.");
+      // Update tabel secara instan tanpa reload
+      setLocalSubscriptions(prev => prev.filter(s => s.id !== id));
+    } catch (err: any) {
+      toast.error(err.message || "Gagal memproses pengajuan.");
+    }
+  }
 
   // --- FUNGSI CROP & UPLOAD BANNER (ADMIN) ---
   const handleBannerFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -252,7 +276,7 @@ export default function AdminTabs({
 
       {/* TOMBOL TAB */}
       <div className="flex border-b border-neutral-200 dark:border-neutral-800 mb-4 overflow-x-auto">
-        <button onClick={() => setActiveTab("subscriptions")} className={`px-4 py-2 text-sm font-medium border-b-2 whitespace-nowrap ${activeTab === "subscriptions" ? "border-forest-700 text-forest-700 dark:border-lime-400 dark:text-lime-400" : "border-transparent text-neutral-500"}`}>Langganan ({subscriptions.length})</button>
+        <button onClick={() => setActiveTab("subscriptions")} className={`px-4 py-2 text-sm font-medium border-b-2 whitespace-nowrap ${activeTab === "subscriptions" ? "border-forest-700 text-forest-700 dark:border-lime-400 dark:text-lime-400" : "border-transparent text-neutral-500"}`}>Langganan ({localSubscriptions.length})</button>
         <button onClick={() => setActiveTab("companies")} className={`px-4 py-2 text-sm font-medium border-b-2 whitespace-nowrap ${activeTab === "companies" ? "border-forest-700 text-forest-700 dark:border-lime-400 dark:text-lime-400" : "border-transparent text-neutral-500"}`}>Verifikasi PT ({localCompanies.length})</button>
         <button onClick={() => setActiveTab("sponsors")} className={`px-4 py-2 text-sm font-medium border-b-2 whitespace-nowrap ${activeTab === "sponsors" ? "border-forest-700 text-forest-700 dark:border-lime-400 dark:text-lime-400" : "border-transparent text-neutral-500"}`}>Iklan Produk ({sponsors.length})</button>
         <button onClick={() => setActiveTab("pending_banners")} className={`px-4 py-2 text-sm font-medium border-b-2 whitespace-nowrap ${activeTab === "pending_banners" ? "border-forest-700 text-forest-700 dark:border-lime-400 dark:text-lime-400" : "border-transparent text-neutral-500"}`}>Persetujuan Iklan ({localPendingBanners.length})</button>
@@ -265,7 +289,7 @@ export default function AdminTabs({
         <button onClick={() => setActiveTab("user_growth")} className={`px-4 py-2 text-sm font-medium border-b-2 whitespace-nowrap ${activeTab === "user_growth" ? "border-purple-600 text-purple-600 dark:border-purple-400 dark:text-purple-400" : "border-transparent text-neutral-500"}`}>👥 Pertumbuhan User</button>
       </div>
 
-      {/* TAB 1: LANGGANAN (SUDAH DIPERBAIKI returnTo) */}
+      {/* TAB 1: LANGGANAN (FIXED) */}
       {activeTab === "subscriptions" && (
         <div className="overflow-x-auto rounded-md border border-neutral-200 dark:border-neutral-800">
           <table className="w-full text-sm text-left">
@@ -273,29 +297,29 @@ export default function AdminTabs({
               <tr><th className="p-3">Perusahaan</th><th className="p-3">Paket</th><th className="p-3">Tanggal</th><th className="p-3">Bukti</th><th className="p-3">Aksi</th></tr>
             </thead>
             <tbody>
-              {subscriptions.map((req) => (
+              {localSubscriptions.map((req) => (
                 <tr key={req.id} className="border-t border-neutral-200 dark:border-neutral-800">
                   <td className="p-3 font-medium">{req.company.name}</td>
                   <td className="p-3"><span className="bg-forest-700 text-white px-2 py-0.5 text-xs rounded-sm">{req.requestedPlan}</span></td>
                   <td className="p-3">{new Date(req.createdAt).toLocaleDateString("id-ID")}</td>
                   <td className="p-3">{req.paymentProofUrl ? <a href={req.paymentProofUrl} target="_blank" className="text-blue-600 underline text-xs">Lihat</a> : "-"}</td>
                   <td className="p-3 flex gap-2">
-                    <form action="/api/admin/verify-subscription" method="POST">
-                      <input type="hidden" name="requestId" value={req.id} />
-                      <input type="hidden" name="action" value="approve" />
-                      <input type="hidden" name="returnTo" value={`/${lang}/admin`} />
-                      <button className="bg-forest-700 px-3 py-1 text-white text-xs rounded hover:bg-forest-500">Setujui</button>
-                    </form>
-                    <form action="/api/admin/verify-subscription" method="POST">
-                      <input type="hidden" name="requestId" value={req.id} />
-                      <input type="hidden" name="action" value="reject" />
-                      <input type="hidden" name="returnTo" value={`/${lang}/admin`} />
-                      <button className="border border-red-500 text-red-500 px-3 py-1 text-xs rounded hover:bg-red-50">Tolak</button>
-                    </form>
+                    <button 
+                      onClick={() => handleSubscriptionAction(req.id, "approve")}
+                      className="bg-forest-700 px-3 py-1 text-white text-xs rounded hover:bg-forest-500"
+                    >
+                      Setujui
+                    </button>
+                    <button 
+                      onClick={() => handleSubscriptionAction(req.id, "reject")}
+                      className="border border-red-500 text-red-500 px-3 py-1 text-xs rounded hover:bg-red-50"
+                    >
+                      Tolak
+                    </button>
                   </td>
                 </tr>
               ))}
-              {subscriptions.length === 0 && <tr><td colSpan={5} className="p-4 text-center text-neutral-500">Tidak ada pengajuan.</td></tr>}
+              {localSubscriptions.length === 0 && <tr><td colSpan={5} className="p-4 text-center text-neutral-500">Tidak ada pengajuan.</td></tr>}
             </tbody>
           </table>
         </div>

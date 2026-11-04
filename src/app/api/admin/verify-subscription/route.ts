@@ -7,49 +7,51 @@ const PLAN_DURATIONS: Record<string, number> = { PRO: 30, PREMIUM: 30, ENTERPRIS
 const PLAN_LIMITS: Record<string, number> = { FREE: 10, PRO: 100, PREMIUM: 500, ENTERPRISE: 99999 };
 
 export async function POST(req: Request) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user || (session.user as any).role !== "ADMIN") {
-    return NextResponse.redirect(new URL("/id/login", req.url));
-  }
-
-  const form = await req.formData();
-  const requestId = String(form.get("requestId"));
-  const action = String(form.get("action"));
-  const returnTo = String(form.get("returnTo") ?? "/id/admin"); // Default redirect
-
-  const request = await prisma.subscriptionRequest.findUnique({ 
-    where: { id: requestId },
-    include: { company: true }
-  });
-  
-  if (!request || request.status !== "PENDING") {
-    return NextResponse.redirect(new URL(returnTo, req.url));
-  }
-
-  if (action === "reject") {
-    await prisma.subscriptionRequest.update({ 
-      where: { id: requestId }, 
-      data: { status: "REJECTED" } 
-    });
-    return NextResponse.redirect(new URL(returnTo, req.url), { status: 303 });
-  }
-
-  // --- LOGIKA APPROVE ---
-  const now = new Date();
-  const requestedPlan = request.requestedPlan;
-  const durationDays = PLAN_DURATIONS[requestedPlan] ?? 30;
-  const newLimit = PLAN_LIMITS[requestedPlan] ?? 10;
-
-  let newExpiresAt: Date | null = null;
-  if (requestedPlan !== "FREE") {
-    let baseDate = now;
-    if (request.company.planExpiresAt && request.company.planExpiresAt > now) {
-      baseDate = request.company.planExpiresAt;
-    }
-    newExpiresAt = new Date(baseDate.getTime() + durationDays * 24 * 60 * 60 * 1000);
-  }
-
   try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user || (session.user as any).role !== "ADMIN") {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    const body = await req.json();
+    const { requestId, action } = body;
+
+    if (!requestId || !["approve", "reject"].includes(action)) {
+      return NextResponse.json({ error: "Data tidak valid" }, { status: 400 });
+    }
+
+    const request = await prisma.subscriptionRequest.findUnique({ 
+      where: { id: requestId },
+      include: { company: true }
+    });
+    
+    if (!request || request.status !== "PENDING") {
+      return NextResponse.json({ error: "Request tidak ditemukan atau sudah diproses." }, { status: 404 });
+    }
+
+    if (action === "reject") {
+      await prisma.subscriptionRequest.update({ 
+        where: { id: requestId }, 
+        data: { status: "REJECTED" } 
+      });
+      return NextResponse.json({ success: true });
+    }
+
+    // --- LOGIKA APPROVE ---
+    const now = new Date();
+    const requestedPlan = request.requestedPlan;
+    const durationDays = PLAN_DURATIONS[requestedPlan] ?? 30;
+    const newLimit = PLAN_LIMITS[requestedPlan] ?? 10;
+
+    let newExpiresAt: Date | null = null;
+    if (requestedPlan !== "FREE") {
+      let baseDate = now;
+      if (request.company?.planExpiresAt && request.company.planExpiresAt > now) {
+        baseDate = request.company.planExpiresAt;
+      }
+      newExpiresAt = new Date(baseDate.getTime() + durationDays * 24 * 60 * 60 * 1000);
+    }
+
     await prisma.$transaction(async (tx) => {
       await tx.subscriptionRequest.update({ 
         where: { id: requestId }, 
@@ -61,7 +63,6 @@ export async function POST(req: Request) {
         data: { plan: requestedPlan as any, planStartedAt: now, planExpiresAt: newExpiresAt } 
       });
 
-      // Restore hidden products
       const activeCount = await tx.product.count({ where: { companyId: request.companyId, status: "ACTIVE" } });
       const slotsAvailable = newLimit - activeCount;
       if (slotsAvailable > 0) {
@@ -78,13 +79,11 @@ export async function POST(req: Request) {
         }
       }
 
-      // Reject other pending requests
       await tx.subscriptionRequest.updateMany({
         where: { companyId: request.companyId, status: "PENDING", id: { not: requestId } },
         data: { status: "REJECTED" },
       });
 
-      // Audit Log (Dibungkus try-catch agar jika gagal, transaksi tetap jalan)
       try {
         await tx.auditLog.create({
           data: {
@@ -92,7 +91,7 @@ export async function POST(req: Request) {
             entity: "Company",
             entityId: request.companyId,
             metadata: {
-              previousPlan: request.company.plan,
+              previousPlan: request.company?.plan || "UNKNOWN",
               newPlan: requestedPlan,
               durationDays,
               newExpiresAt: newExpiresAt?.toISOString() ?? null,
@@ -105,9 +104,10 @@ export async function POST(req: Request) {
       }
     });
 
-    return NextResponse.redirect(new URL(returnTo, req.url), { status: 303 });
+    return NextResponse.json({ success: true });
+    
   } catch (error) {
-    console.error("verify-subscription error:", error);
-    return NextResponse.redirect(new URL(`${returnTo}?error=approve_failed`, req.url), { status: 303 });
+    console.error("verify-subscription FATAL ERROR:", error);
+    return NextResponse.json({ error: "Terjadi kesalahan sistem" }, { status: 500 });
   }
 }
