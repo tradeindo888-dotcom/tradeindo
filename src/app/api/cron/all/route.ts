@@ -4,7 +4,7 @@ import { expireSponsorships } from "@/lib/cron/expire-sponsorships";
 import { cancelPendingSponsorships } from "@/lib/cron/cancel-pending-sponsorships";
 import { expireSubscriptions } from "@/lib/cron/expire-subscriptions";
 import { enforceProductLimits } from "@/lib/cron/enforce-product-limits";
-import { cleanupUnverifiedUsers, cleanupOldAnalytics } from "@/lib/cron/cleanup";
+//import { cleanupUnverifiedUsers, cleanupOldAnalytics } from "@/lib/cron/cleanup";
 import { expireRfqs } from "@/lib/cron/expire-rfqs";
 
 export async function GET(req: Request) {
@@ -31,8 +31,8 @@ export async function GET(req: Request) {
       cancelPendingSponsorships(),
       expireSubscriptions(),
       enforceProductLimits(),
-      cleanupUnverifiedUsers(),
-      cleanupOldAnalytics(),
+      //cleanupUnverifiedUsers(),
+      //cleanupOldAnalytics(),
       expireRfqs(), // <-- BARU
     ]);
 
