@@ -1,12 +1,13 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter, useParams, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/Button";
 
-export default function LoginPage() {
+// Komponen utama form login
+function LoginForm() {
   const router = useRouter();
   const params = useParams();
   const searchParams = useSearchParams();
@@ -96,12 +97,15 @@ export default function LoginPage() {
         </div>
 
         <div>
+          {/* Label & Link Lupa Password */}
           <div className="flex justify-between items-center mb-1">
             <label className="text-sm font-medium block">Password</label>
             <Link href={`/${lang}/forgot-password`} className="text-xs text-forest-700 hover:underline dark:text-lime-400 font-medium">
-             {lang === "en" ? "Forgot password?" : "Lupa password?"}
+              {lang === "en" ? "Forgot password?" : "Lupa password?"}
             </Link>
-        </div>
+          </div>
+          
+          {/* Input Password */}
           <input
             required
             type="password"
@@ -110,6 +114,16 @@ export default function LoginPage() {
             className="w-full h-11 rounded-md border border-neutral-300 px-3 text-sm bg-white text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-forest-700 focus:border-transparent dark:bg-neutral-800 dark:border-neutral-700 dark:text-white dark:placeholder:text-neutral-500 dark:focus:ring-lime-400"
             placeholder="••••••••"
           />
+
+          {/* TOMBOL GANTI PASSWORD (Di bawah input password) */}
+          <div className="flex justify-end mt-1.5">
+            <Link 
+              href={`/${lang}/change-password`} 
+              className="text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 font-medium hover:underline transition-colors"
+            >
+              {lang === "en" ? "Change Password" : "Ganti Password"}
+            </Link>
+          </div>
         </div>
 
         <Button type="submit" disabled={loading} className="w-full h-11 text-base font-bold">
@@ -124,5 +138,14 @@ export default function LoginPage() {
         </div>
       </form>
     </div>
+  );
+}
+
+// Wrapper Suspense wajib ada karena menggunakan useSearchParams
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="p-16 text-center text-neutral-500">Memuat halaman...</div>}>
+      <LoginForm />
+    </Suspense>
   );
 }
