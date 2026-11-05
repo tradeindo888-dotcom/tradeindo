@@ -35,6 +35,9 @@ export default function RegisterPage() {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // CLASS INPUT AGAR TIDAK ABU-ABU DI HP
+  const inputClass = "w-full h-11 rounded-md border border-neutral-300 px-3 text-sm bg-white text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-forest-700 focus:border-transparent dark:bg-neutral-800 dark:border-neutral-700 dark:text-white dark:placeholder:text-neutral-500 dark:focus:ring-lime-400";
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
@@ -104,9 +107,6 @@ export default function RegisterPage() {
       setLoading(false);
     }
   }
-
-  // CLASS INPUT YANG SUDAH DIPERBAIKI UNTUK MOBILE DARK MODE
-  const inputClass = "w-full h-11 rounded-md border border-neutral-300 px-3 text-sm bg-white text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-forest-700 focus:border-transparent dark:bg-neutral-800 dark:border-neutral-700 dark:text-white dark:placeholder:text-neutral-500 dark:focus:ring-lime-400";
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-12">
@@ -224,10 +224,26 @@ export default function RegisterPage() {
             <div><label className="text-sm font-medium block mb-1">{lang === "en" ? "Full Address" : "Alamat Lengkap"}</label><input type="text" value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} className={inputClass} /></div>
             <div><label className="text-sm font-medium block mb-1">{lang === "en" ? "Phone Number" : "Nomor Telepon"}</label><input type="tel" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className={inputClass} /></div>
 
-            <div className="flex items-center gap-2 pt-2">
-              <input type="checkbox" id="exportCapability" checked={form.exportCapability} onChange={(e) => setForm({ ...form, exportCapability: e.target.checked })} className="h-4 w-4 accent-forest-700 rounded border-neutral-300" />
-              <label htmlFor="exportCapability" className="text-sm font-medium cursor-pointer">{lang === "en" ? "Company is capable of export" : "Perusahaan ini mampu melayani ekspor"}</label>
-            </div>
+            {/* CUSTOM CHECKBOX EXPORT (CEKLIS SUDAH DIPERBAIKI) */}
+            <label className="flex items-start gap-3 p-4 border border-neutral-200 rounded-lg bg-neutral-50 dark:bg-neutral-800/50 dark:border-neutral-700 cursor-pointer mt-2">
+              <input
+                type="checkbox"
+                id="exportCapability"
+                checked={form.exportCapability}
+                onChange={(e) => setForm({ ...form, exportCapability: e.target.checked })}
+                className="sr-only peer"
+              />
+              <div className="mt-0.5 h-5 w-5 shrink-0 rounded border border-neutral-300 bg-white dark:border-neutral-500 dark:bg-neutral-700 peer-checked:bg-forest-700 peer-checked:border-forest-700 dark:peer-checked:bg-lime-400 dark:peer-checked:border-lime-400 peer-checked:[&_svg]:opacity-100 flex items-center justify-center transition-colors">
+                <svg className="w-3.5 h-3.5 text-white dark:text-neutral-900 opacity-0 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              <div className="flex-1">
+                <span className="text-sm font-medium text-neutral-900 dark:text-neutral-200">
+                  {lang === "en" ? "Company is capable of export" : "Perusahaan ini mampu melayani ekspor"}
+                </span>
+              </div>
+            </label>
           </div>
         </div>
 
