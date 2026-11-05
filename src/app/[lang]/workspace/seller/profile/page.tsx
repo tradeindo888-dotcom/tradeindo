@@ -162,19 +162,25 @@ export default function EditProfile() {
           <input name="phone" defaultValue={profile.phone || ""} placeholder="021-1234567 atau 08123456789" className={inputClass} />
         </div>
 
-        {/* CHECKBOX EXPORT (DIPERBAIKI) */}
-        <div className="flex items-center gap-3 p-4 border border-neutral-200 rounded-lg bg-neutral-50 dark:bg-neutral-800/50 dark:border-neutral-700">
+        {/* CUSTOM CHECKBOX EXPORT (ANTI GELAP DI HP) */}
+        <label className="flex items-start gap-3 p-4 border border-neutral-200 rounded-lg bg-neutral-50 dark:bg-neutral-800/50 dark:border-neutral-700 cursor-pointer">
           <input 
             type="checkbox" 
             name="exportCapability" 
             defaultChecked={profile.exportCapability} 
-            className="h-5 w-5 accent-forest-700 rounded border border-neutral-300 bg-white focus:ring-forest-700 dark:border-neutral-600 dark:bg-neutral-800 dark:focus:ring-lime-400" 
-            id="export" 
+            className="sr-only peer" 
           />
-          <label htmlFor="export" className="text-sm font-medium cursor-pointer text-neutral-900 dark:text-neutral-200">
-            Perusahaan ini mampu melayani ekspor
-          </label>
-        </div>
+          <div className="mt-0.5 h-5 w-5 shrink-0 rounded border border-neutral-300 bg-white dark:border-neutral-500 dark:bg-neutral-700 peer-checked:bg-forest-700 peer-checked:border-forest-700 dark:peer-checked:bg-lime-400 dark:peer-checked:border-lime-400 flex items-center justify-center transition-colors">
+            <svg className="w-3.5 h-3.5 text-white dark:text-neutral-900 opacity-0 peer-checked:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+          <div className="flex-1">
+            <span className="text-sm font-medium text-neutral-900 dark:text-neutral-200">
+              Perusahaan ini mampu melayani ekspor
+            </span>
+          </div>
+        </label>
 
         <div className="flex gap-3 pt-6 border-t border-neutral-200 dark:border-neutral-800">
           <Button type="submit" disabled={saving} className="flex-1 h-11">
