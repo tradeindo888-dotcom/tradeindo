@@ -16,10 +16,12 @@ enum Role {
 }
 
 enum CompanyType {
+  BUYER
+  SERVICE_PROVIDER
   MANUFACTURER
   DISTRIBUTOR
   EXPORTER
-  BUYER
+  INDUSTRY
 }
 
 enum VerificationStatus {

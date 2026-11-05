@@ -1,236 +1,315 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { toast } from "sonner";
 import { Button } from "@/components/ui/Button";
-import { CATEGORY_NAMES, validateCategoryChoice } from "@/lib/category-keywords";
+import { toast } from "sonner";
 
-export default function EditProduct() {
+export default function EditProfile() {
   const params = useParams();
   const router = useRouter();
   const lang = params.lang === "en" ? "en" : "id";
-  const productId = params.id as string;
 
-  const [loading, setLoading] = useState(false);
-  const [product, setProduct] = useState<any>(null);
-  const [categories, setCategories] = useState<any[]>([]);
-  const [newImages, setNewImages] = useState<string[]>([]);
-  const [deletedImages, setDeletedImages] = useState<string[]>([]);
+  const [profile, setProfile] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
-  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // CLASS INPUT AGAR TIDAK ABU-ABU DI HP
-  const inputClass = "w-full h-11 rounded-md border border-neutral-300 px-3 text-sm bg-white text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-forest-700 focus:border-transparent dark:bg-neutral-800 dark:border-neutral-700 dark:text-white dark:placeholder:text-neutral-500 dark:focus:ring-lime-400";
+  const inputClass =
+    "w-full h-11 rounded-md border border-neutral-300 px-3 text-sm bg-white text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-forest-700 focus:border-transparent dark:bg-neutral-800 dark:border-neutral-700 dark:text-white dark:placeholder:text-neutral-500 dark:focus:ring-lime-400";
 
   useEffect(() => {
-    fetch(`/api/seller/products/${productId}`)
+    fetch("/api/seller/profile")
       .then((res) => res.json())
-      .then((data) => setProduct(data))
-      .catch(() => toast.error("Gagal memuat produk."));
-
-    fetch("/api/categories")
-      .then((res) => res.json())
-      .then((data) => setCategories(data))
-      .catch(() => toast.error("Gagal memuat kategori."));
-  }, [productId]);
-
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setSelectedImage(null);
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
+      .then((data) => {
+        setProfile(data);
+        setLoading(false);
+      })
+      .catch(() => {
+        toast.error("Gagal memuat profil.");
+        setLoading(false);
+      });
   }, []);
 
-  async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
-    setUploading(true);
-    const uploadedUrls: string[] = [];
+  async function handleLogoUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
 
-    for (let i = 0; i < files.length; i++) {
-      const formData = new FormData();
-      formData.append("file", files[i]);
-      const res = await fetch("/api/upload/public", { method: "POST", body: formData });
-      if (res.ok) {
-        const data = await res.json();
-        uploadedUrls.push(data.url);
-      } else {
-        toast.error(lang === "en" ? "Upload failed." : "Gagal upload gambar.");
-      }
+    if (file.size > 5 * 1024 * 1024) {
+      return toast.error("Ukuran gambar maksimal 5MB.");
     }
-    setNewImages((prev) => [...prev, ...uploadedUrls]);
-    setUploading(false);
-    if (fileInputRef.current) fileInputRef.current.value = "";
+
+    setUploading(true);
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      const res = await fetch("/api/upload/public", {
+        method: "POST",
+        body: formData,
+      });
+      if (!res.ok) throw new Error();
+      const data = await res.json();
+      setProfile({ ...profile, logoUrl: data.url });
+      toast.success("Logo berhasil diunggah.");
+    } catch {
+      toast.error("Gagal upload logo.");
+    } finally {
+      setUploading(false);
+      e.target.value = "";
+    }
   }
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    
+    setSaving(true);
     const fd = new FormData(e.currentTarget);
-    const title = String(fd.get("title") || "");
-    const categoryId = String(fd.get("categoryId") || "");
-    const category = categories.find(c => c.id === categoryId);
-    
-    // Validasi Kata Kunci Kategori
-    if (category) {
-      const validation = validateCategoryChoice(title, category.slug);
-      if (validation.isWarning) {
-        const proceed = window.confirm(
-          `⚠️ PERINGATAN KATEGORI ⚠️\n\n` +
-          `${validation.message}\n\n` +
-          `Apakah Anda yakin ingin tetap menyimpan dengan kategori "${CATEGORY_NAMES[category.slug]}"?`
-        );
-        if (!proceed) return;
-      }
-    }
-    
-    // Konfirmasi Sebelum Simpan
-    const categoryChanged = category?.id !== product?.categoryId;
-    
-    const confirmMessage = 
-      `Simpan perubahan produk?\n\n` +
-      `📦 Nama Produk: ${title}\n` +
-      `📂 Kategori: ${category ? CATEGORY_NAMES[category.slug] : "-"}` +
-      (categoryChanged ? ` (DIUBAH dari kategori lama)` : "") + `\n` +
-      `💰 Harga: Rp ${Number(fd.get("priceMin") || 0).toLocaleString("id-ID")}\n` +
-      `📊 MOQ: ${fd.get("moq")} ${fd.get("moqUnit")}\n` +
-      `🖼️ Gambar: ${newImages.length} baru, ${deletedImages.length} dihapus`;
-    
-    if (!window.confirm(confirmMessage)) return;
-    
-    setLoading(true);
-    
+
     const body = {
-      title: fd.get("title"),
-      categoryId: fd.get("categoryId"),
+      name: fd.get("name"),
+      type: String(fd.get("type") || "MANUFACTURER"),
       description: fd.get("description"),
-      moq: Number(fd.get("moq")),
-      moqUnit: fd.get("moqUnit"),
-      priceMin: fd.get("priceMin") ? Number(fd.get("priceMin")) : null,
-      newImages: newImages,
-      deletedImages: deletedImages,
+      city: fd.get("city"),
+      province: fd.get("province"),
+      website: fd.get("website"),
+      yearEstablished: fd.get("yearEstablished")
+        ? Number(fd.get("yearEstablished"))
+        : null,
+      address: fd.get("address"),
+      phone: fd.get("phone"),
+      exportCapability: fd.get("exportCapability") === "on",
+      logoUrl: profile.logoUrl,
     };
 
-    const submitPromise = (async () => {
-      const res = await fetch(`/api/seller/products/${productId}`, {
+    try {
+      const res = await fetch("/api/seller/profile", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
+
       if (!res.ok) {
-        const j = await res.json().catch(() => ({}));
-        throw new Error(j.error || (lang === "en" ? "Failed to update." : "Gagal menyimpan perubahan."));
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Gagal menyimpan.");
       }
+
+      toast.success("Profil perusahaan berhasil diperbarui!");
       router.push(`/${lang}/workspace/seller`);
-      return "success";
-    })();
-
-    toast.promise(submitPromise, {
-      loading: lang === "en" ? "Saving changes..." : "Menyimpan perubahan...",
-      success: lang === "en" ? "Product updated!" : "Produk berhasil diperbarui!",
-      error: (err) => err.message,
-    });
-
-    try { await submitPromise; } catch {} finally { setLoading(false); }
+      router.refresh();
+    } catch (err: any) {
+      toast.error(err.message || "Gagal menyimpan perubahan.");
+    } finally {
+      setSaving(false);
+    }
   }
 
-  if (!product) return <div className="p-8 text-center text-neutral-500">Memuat data...</div>;
+  if (loading)
+    return (
+      <div className="p-8 text-center text-neutral-500">Memuat profil...</div>
+    );
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-8">
-      <h1 className="font-display text-2xl font-bold mb-6">{lang === "en" ? "Edit Product" : "Edit Produk"}</h1>
+      <h1 className="font-display text-2xl font-bold mb-6 text-neutral-900 dark:text-white">
+        Edit Profil Perusahaan
+      </h1>
 
-      <form onSubmit={onSubmit} className="bg-white dark:bg-neutral-900 p-6 rounded-xl border border-neutral-200 dark:border-neutral-800 shadow-sm space-y-5">
-        <div>
-          <label className="text-sm font-medium block mb-1">{lang === "en" ? "Product Name" : "Nama Produk"}</label>
-          <input name="title" defaultValue={product.titleId} required className={inputClass} />
+      <form onSubmit={onSubmit} className="space-y-6">
+        {/* Logo Upload */}
+        <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
+          <div className="flex h-32 w-48 shrink-0 items-center justify-center rounded-lg border border-neutral-300 bg-white overflow-hidden dark:border-neutral-700 dark:bg-neutral-900">
+            {profile.logoUrl ? (
+              <img
+                src={profile.logoUrl}
+                alt="Logo"
+                className="h-full w-full object-contain p-2"
+              />
+            ) : (
+              <span className="text-xs text-neutral-400">Belum ada logo</span>
+            )}
+          </div>
+          <div className="flex flex-col gap-2">
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleLogoUpload}
+              className="hidden"
+              accept="image/*"
+            />
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploading}
+            >
+              {uploading ? "Mengunggah..." : "Ubah Logo"}
+            </Button>
+            <p className="text-xs text-neutral-500">
+              Maksimal 5MB. Format JPG/PNG.
+            </p>
+          </div>
         </div>
 
         <div>
-          <label className="text-sm font-medium block mb-1">{lang === "en" ? "Category" : "Kategori Produk"}</label>
-          <select name="categoryId" defaultValue={product.categoryId} required className={inputClass}>
-            <option value="">{lang === "en" ? "Select Category..." : "Pilih Kategori..."}</option>
-            {categories.map((c) => (
-              <option key={c.id} value={c.id}>{lang === "en" ? c.nameEn : c.nameId}</option>
-            ))}
+          <label className="text-sm font-medium block mb-1 text-neutral-700 dark:text-neutral-300">
+            Nama Perusahaan
+          </label>
+          <input
+            name="name"
+            defaultValue={profile.name}
+            required
+            className={inputClass}
+          />
+        </div>
+
+        {/* TIPE BISNIS — 6 opsi */}
+        <div>
+          <label className="text-sm font-medium block mb-1 text-neutral-700 dark:text-neutral-300">
+            Tipe Bisnis
+          </label>
+          <select
+            name="type"
+            defaultValue={profile.type || "MANUFACTURER"}
+            className={inputClass}
+          >
+            <option value="BUYER">Buyer</option>
+            <option value="SERVICE_PROVIDER">Penyedia Jasa</option>
+            <option value="MANUFACTURER">Produsen</option>
+            <option value="DISTRIBUTOR">Distributor</option>
+            <option value="EXPORTER">Eksportir</option>
+            <option value="INDUSTRY">Industri</option>
           </select>
         </div>
 
         <div>
-          <label className="text-sm font-medium block mb-1">{lang === "en" ? "Description" : "Deskripsi"}</label>
-          <textarea name="description" defaultValue={product.description || ""} rows={3} className={`${inputClass} h-auto py-3`} />
+          <label className="text-sm font-medium block mb-1 text-neutral-700 dark:text-neutral-300">
+            Deskripsi Perusahaan
+          </label>
+          <textarea
+            name="description"
+            defaultValue={profile.description || ""}
+            rows={4}
+            className={`${inputClass} h-auto py-3`}
+            placeholder="Ceritakan tentang perusahaan Anda..."
+          />
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="text-sm font-medium block mb-1">MOQ</label>
-            <input name="moq" type="number" defaultValue={product.moq} required className={inputClass} />
+            <label className="text-sm font-medium block mb-1 text-neutral-700 dark:text-neutral-300">
+              Kota
+            </label>
+            <input
+              name="city"
+              defaultValue={profile.city || ""}
+              className={inputClass}
+            />
           </div>
           <div>
-            <label className="text-sm font-medium block mb-1">{lang === "en" ? "Unit" : "Satuan"}</label>
-            <input name="moqUnit" defaultValue={product.moqUnit} className={inputClass} />
+            <label className="text-sm font-medium block mb-1 text-neutral-700 dark:text-neutral-300">
+              Provinsi
+            </label>
+            <input
+              name="province"
+              defaultValue={profile.province || ""}
+              className={inputClass}
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="text-sm font-medium block mb-1 text-neutral-700 dark:text-neutral-300">
+              Website
+            </label>
+            <input
+              name="website"
+              defaultValue={profile.website || ""}
+              placeholder="https://..."
+              className={inputClass}
+            />
+          </div>
+          <div>
+            <label className="text-sm font-medium block mb-1 text-neutral-700 dark:text-neutral-300">
+              Tahun Berdiri
+            </label>
+            <input
+              name="yearEstablished"
+              type="number"
+              defaultValue={profile.yearEstablished || ""}
+              placeholder="2020"
+              className={inputClass}
+            />
           </div>
         </div>
 
         <div>
-          <label className="text-sm font-medium block mb-1">{lang === "en" ? "Indicative Price (Rp)" : "Harga Indikatif (Rp)"}</label>
-          <input name="priceMin" type="number" defaultValue={product.priceMin || ""} className={inputClass} />
+          <label className="text-sm font-medium block mb-1 text-neutral-700 dark:text-neutral-300">
+            Alamat Lengkap
+          </label>
+          <input
+            name="address"
+            defaultValue={profile.address || ""}
+            placeholder="Jl. Contoh No. 123"
+            className={inputClass}
+          />
+        </div>
+        <div>
+          <label className="text-sm font-medium block mb-1 text-neutral-700 dark:text-neutral-300">
+            Nomor Telepon
+          </label>
+          <input
+            name="phone"
+            defaultValue={profile.phone || ""}
+            placeholder="021-1234567 atau 08123456789"
+            className={inputClass}
+          />
         </div>
 
-        {/* GAMBAR SAAT INI */}
-        {product.images && product.images.length > 0 && (
-          <div>
-            <label className="text-sm font-medium block mb-2">{lang === "en" ? "Current Images" : "Gambar Saat Ini"}</label>
-            <div className="flex flex-wrap gap-2">
-              {product.images.map((img: any) => {
-                if (deletedImages.includes(img.id)) return null;
-                return (
-                  <div key={img.id} className="relative h-20 w-20 rounded-md border border-neutral-200 dark:border-neutral-700 overflow-hidden group">
-                    <img src={img.url} alt="Lama" className="h-full w-full object-cover cursor-pointer" onClick={() => setSelectedImage(img.url)} />
-                    <button type="button" onClick={() => setDeletedImages([...deletedImages, img.id])} className="absolute top-1 right-1 bg-red-600 text-white rounded-full h-5 w-5 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity">×</button>
-                  </div>
-                );
-              })}
-            </div>
+        {/* CUSTOM CHECKBOX EXPORT */}
+        <label className="flex items-start gap-3 p-4 border border-neutral-200 rounded-lg bg-neutral-50 dark:bg-neutral-800/50 dark:border-neutral-700 cursor-pointer">
+          <input
+            type="checkbox"
+            name="exportCapability"
+            defaultChecked={profile.exportCapability}
+            className="sr-only peer"
+          />
+          <div className="mt-0.5 h-5 w-5 shrink-0 rounded border border-neutral-300 bg-white dark:border-neutral-500 dark:bg-neutral-700 peer-checked:bg-forest-700 peer-checked:border-forest-700 dark:peer-checked:bg-lime-400 dark:peer-checked:border-lime-400 peer-checked:[&_svg]:opacity-100 flex items-center justify-center transition-colors">
+            <svg
+              className="w-3.5 h-3.5 text-white dark:text-neutral-900 opacity-0 transition-opacity"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={3}
+                d="M5 13l4 4L19 7"
+              />
+            </svg>
           </div>
-        )}
+          <div className="flex-1">
+            <span className="text-sm font-medium text-neutral-900 dark:text-neutral-200">
+              Perusahaan ini mampu melayani ekspor
+            </span>
+          </div>
+        </label>
 
-        {/* TAMBAH GAMBAR BARU */}
-        <div className="rounded-md border border-dashed border-neutral-300 p-4 dark:border-neutral-700">
-          <label className="text-sm font-medium block mb-2">{lang === "en" ? "Add New Images" : "Tambah Gambar Baru"}</label>
-          <input type="file" multiple accept="image/*" ref={fileInputRef} onChange={handleImageUpload} className="block w-full text-sm text-neutral-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:font-semibold file:bg-forest-700 file:text-white hover:file:bg-forest-500" />
-          {uploading && <p className="mt-2 text-sm text-blue-600">{lang === "en" ? "Uploading..." : "Sedang mengunggah..."}</p>}
-          {newImages.length > 0 && (
-            <div className="mt-4 flex flex-wrap gap-2">
-              {newImages.map((url, idx) => (
-                <div key={idx} className="relative h-20 w-20 rounded-md border border-neutral-200 dark:border-neutral-700 overflow-hidden">
-                  <img src={url} alt="Baru" className="h-full w-full object-cover" />
-                  <button type="button" onClick={() => setNewImages(newImages.filter((_, i) => i !== idx))} className="absolute top-1 right-1 bg-red-600 text-white rounded-full h-5 w-5 flex items-center justify-center text-xs">×</button>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        <div className="flex gap-3 pt-4 border-t border-neutral-200 dark:border-neutral-800">
-          <Button type="submit" disabled={loading || uploading} className="flex-1 h-11">
-            {loading ? (lang === "en" ? "Saving..." : "Menyimpan...") : (lang === "en" ? "Save Changes" : "Simpan Perubahan")}
+        <div className="flex gap-3 pt-6 border-t border-neutral-200 dark:border-neutral-800">
+          <Button type="submit" disabled={saving} className="flex-1 h-11">
+            {saving ? "Menyimpan..." : "Simpan Perubahan"}
           </Button>
-          <Button type="button" variant="ghost" onClick={() => router.push(`/${lang}/workspace/seller`)} className="h-11">Batal</Button>
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={() => router.push(`/${lang}/workspace/seller`)}
+            className="h-11"
+          >
+            Batal
+          </Button>
         </div>
       </form>
-
-      {/* LIGHTBOX ZOOM GAMBAR */}
-      {selectedImage && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm" onClick={() => setSelectedImage(null)}>
-          <div className="relative max-w-4xl max-h-[90vh]">
-            <img src={selectedImage} alt="Gambar Produk Besar" className="max-w-full max-h-[90vh] object-contain rounded-md shadow-2xl" />
-            <button onClick={(e) => { e.stopPropagation(); setSelectedImage(null); }} className="absolute -top-10 right-0 text-white bg-black/50 rounded-full h-8 w-8 flex items-center justify-center text-xl font-bold">✕</button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
