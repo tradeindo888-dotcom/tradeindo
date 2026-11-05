@@ -51,7 +51,11 @@ export async function POST(req: Request) {
         }),
         prisma.product.update({
           where: { id: request.productId },
-          data: { sponsoredAt: now, sponsoredUntil: expiresAt },
+          data: { 
+            sponsoredAt: now, 
+            sponsoredUntil: expiresAt,
+            status: "ACTIVE" // <-- PERBAIKAN: Paksa produk tayang karena sudah dibayar
+          },
         }),
         prisma.auditLog.create({
           data: {
@@ -70,6 +74,7 @@ export async function POST(req: Request) {
 
       return NextResponse.json({ success: true });
     } else {
+      // Logika REJECT
       if (!canTransition(request.status, "REJECTED")) {
         return NextResponse.json({ error: "Status tidak valid" }, { status: 409 });
       }

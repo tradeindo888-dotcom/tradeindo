@@ -63,14 +63,18 @@ export async function POST(req: Request) {
         data: { plan: requestedPlan as any, planStartedAt: now, planExpiresAt: newExpiresAt } 
       });
 
+      // HITUNG SISA SLOT UNTUK MEMUNCULKAN PRODUK YANG HIDDEN
       const activeCount = await tx.product.count({ where: { companyId: request.companyId, status: "ACTIVE" } });
       const slotsAvailable = newLimit - activeCount;
+      
       if (slotsAvailable > 0) {
+        // Ambil produk HIDDEN, prioritas yang paling lama atau terbaru (bebas, di sini kita ambil terbaru)
         const hiddenProducts = await tx.product.findMany({
           where: { companyId: request.companyId, status: "HIDDEN" },
           orderBy: { createdAt: "desc" },
           take: slotsAvailable,
         });
+        
         if (hiddenProducts.length > 0) {
           await tx.product.updateMany({
             where: { id: { in: hiddenProducts.map((p) => p.id) } },
@@ -79,29 +83,27 @@ export async function POST(req: Request) {
         }
       }
 
+      // Tolak pengajuan PENDING lain milik user ini jika ada (agar tidak dobel)
       await tx.subscriptionRequest.updateMany({
         where: { companyId: request.companyId, status: "PENDING", id: { not: requestId } },
         data: { status: "REJECTED" },
       });
 
-      try {
-        await tx.auditLog.create({
-          data: {
-            action: "subscription.approve",
-            entity: "Company",
-            entityId: request.companyId,
-            metadata: {
-              previousPlan: request.company?.plan || "UNKNOWN",
-              newPlan: requestedPlan,
-              durationDays,
-              newExpiresAt: newExpiresAt?.toISOString() ?? null,
-              restoredProducts: slotsAvailable,
-            },
+      // Audit Log
+      await tx.auditLog.create({
+        data: {
+          action: "subscription.approve",
+          entity: "Company",
+          entityId: request.companyId,
+          metadata: {
+            previousPlan: request.company?.plan || "UNKNOWN",
+            newPlan: requestedPlan,
+            durationDays,
+            newExpiresAt: newExpiresAt?.toISOString() ?? null,
+            restoredProducts: slotsAvailable,
           },
-        });
-      } catch (logError) {
-        console.error("Gagal mencatat audit log:", logError);
-      }
+        },
+      });
     });
 
     return NextResponse.json({ success: true });

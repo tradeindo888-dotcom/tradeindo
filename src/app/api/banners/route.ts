@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-export const dynamic = "force-dynamic";
+export const dynamic = "force-dynamic"; // Mencegah cache agar langsung hilang saat jam habis
 
 export async function GET(req: Request) {
   try {
@@ -15,16 +15,17 @@ export async function GET(req: Request) {
         status: "APPROVED",
         type: type,
         OR: [
-          { endDate: null }, // Banner admin (tidak expired)
-          { endDate: { gt: now } } // Banner customer (belum expired)
+          { endDate: null },          // Jika tidak ada tanggal berakhir (permanen)
+          { endDate: { gt: now } }    // Hanya ambil jika endDate BELUM terlewati
         ]
       },
       orderBy: type === "SIDEBAR" ? { createdAt: "desc" } : { order: "asc" },
-      take: type === "SIDEBAR" ? 1 : undefined, // Sidebar hanya 1 iklan
+      take: type === "SIDEBAR" ? 1 : undefined,
     });
     
     return NextResponse.json(banners);
   } catch (error) {
+    console.error("GET /api/banners error:", error);
     return NextResponse.json({ error: "Gagal mengambil data banner" }, { status: 500 });
   }
 }

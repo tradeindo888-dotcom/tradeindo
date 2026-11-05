@@ -5,7 +5,9 @@ import { prisma } from "@/lib/prisma";
 
 export async function GET() {
   const session = await getServerSession(authOptions);
-  if (!session?.user || (session.user as any).role !== "ADMIN") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if (!session?.user || (session.user as any).role !== "ADMIN") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   try {
     const banners = await prisma.banner.findMany({ 
@@ -20,18 +22,23 @@ export async function GET() {
 
 export async function POST(req: Request) {
   const session = await getServerSession(authOptions);
-  if (!session?.user || (session.user as any).role !== "ADMIN") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if (!session?.user || (session.user as any).role !== "ADMIN") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   try {
     const body = await req.json();
     const { imageUrl, title, linkUrl, order, type, durationDays } = body;
-    if (!imageUrl) return NextResponse.json({ error: "Gambar wajib diunggah" }, { status: 400 });
+    
+    if (!imageUrl) {
+      return NextResponse.json({ error: "Gambar wajib diunggah" }, { status: 400 });
+    }
 
     let endDate = null;
-    // Hitung endDate jika durasi diisi
+    // HITUNG EXACT TIME: Waktu sekarang + durasi (hari)
     if (durationDays && Number(durationDays) > 0) {
-      endDate = new Date();
-      endDate.setDate(endDate.getDate() + Number(durationDays));
+      const now = new Date();
+      endDate = new Date(now.getTime() + Number(durationDays) * 24 * 60 * 60 * 1000);
     }
 
     const banner = await prisma.banner.create({
@@ -41,12 +48,13 @@ export async function POST(req: Request) {
         linkUrl: linkUrl || null,
         type: type || "CAROUSEL",
         durationDays: durationDays ? Number(durationDays) : null,
-        endDate, // Simpan tanggal berakhir
+        endDate: endDate,
         order: Number(order) || 0,
         status: "APPROVED",
         isActive: true,
       },
     });
+    
     return NextResponse.json({ success: true, banner });
   } catch (error) {
     console.error("Create banner error:", error);

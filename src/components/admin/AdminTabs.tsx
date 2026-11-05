@@ -11,14 +11,14 @@ export default function AdminTabs({
   subscriptionChartData = [], currentMonthSubRevenue = 0,
   totalRevenueChartData = [], currentMonthTotalRevenue = 0,
   userChartData = [], totalUsers = 0,
-  lang = "id"
+  lang = "id" // <-- DIPERBAIKI: Menambahkan lang kembali agar build sukses
 }: { 
   subscriptions: any[]; companies: any[]; sponsors: any[]; users: any[]; pendingBanners?: any[]; consumerReports?: any[]; 
   adRevenueChartData?: any[]; currentMonthAdRevenue?: number;
   subscriptionChartData?: any[]; currentMonthSubRevenue?: number;
   totalRevenueChartData?: any[]; currentMonthTotalRevenue?: number;
   userChartData?: any[]; totalUsers?: number;
-  lang?: string;
+  lang?: string; // <-- DIPERBAIKI
 }) {
   const [activeTab, setActiveTab] = useState<"subscriptions" | "companies" | "sponsors" | "users" | "banners" | "pending_banners" | "reports" | "ad_revenue" | "sub_revenue" | "total_revenue" | "user_growth">("subscriptions");
   
@@ -132,7 +132,6 @@ export default function AdminTabs({
   }
 
   // --- FUNGSI PERSETUJUAN BANNER CUSTOMER ---
-  // Karena admin upload manual, tombol ini hanya menghapus antrean
   async function handleFinishBanner(id: string) {
     if (!confirm("Tandai antrean ini selesai dan hapus? Pastikan Anda SUDAH mengunggah banner buatan customer di tab 'Kelola Banner'.")) return;
     try { 
@@ -215,7 +214,7 @@ export default function AdminTabs({
       </div>
 
       {/* ======================================================== */}
-      {/* TAB: LAPORAN PENDAPATAN (SAMA SEPERTI SEBELUMNYA) */}
+      {/* TAB: LAPORAN PENDAPATAN */}
       {/* ======================================================== */}
       {activeTab === "ad_revenue" && (
         <div className="rounded-xl border bg-white p-6 shadow-sm dark:bg-neutral-900 dark:border-neutral-800">
@@ -510,7 +509,19 @@ export default function AdminTabs({
                 {banners.filter(b => b.type === "CAROUSEL" && b.status === "APPROVED").map(b => (
                   <div key={b.id} className="flex gap-4 p-3 border border-neutral-200 dark:border-neutral-800 rounded-lg items-center hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition-colors">
                     <div className="h-16 w-28 shrink-0 rounded overflow-hidden border bg-neutral-100"><img src={b.imageUrl} alt="Banner" className="w-full h-full object-cover" /></div>
-                    <div className="flex-1"><p className="font-bold text-sm">{b.title || "-"}</p><p className="text-xs text-neutral-500">Urutan: {b.order}</p></div>
+                    <div className="flex-1">
+                      <p className="font-bold text-sm">{b.title || "-"}</p>
+                      <p className="text-xs text-neutral-500">Urutan: {b.order}</p>
+                      {/* UPDATE: Tanggal & Jam Berakhir */}
+                      {b.endDate && (
+                        <p className="text-xs text-red-500 font-medium">
+                          Berakhir: {new Date(b.endDate).toLocaleString("id-ID", {
+                            day: "2-digit", month: "2-digit", year: "numeric",
+                            hour: "2-digit", minute: "2-digit"
+                          })}
+                        </p>
+                      )}
+                    </div>
                     <div className="flex gap-1">
                       <button onClick={() => handleEditClick(b)} className="text-amber-500 hover:bg-amber-50 p-2 rounded-md transition-colors" title="Edit Banner"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg></button>
                       <button onClick={() => handleDeleteBanner(b.id)} className="text-red-500 hover:bg-red-50 p-2 rounded-md transition-colors" title="Hapus Banner"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>
