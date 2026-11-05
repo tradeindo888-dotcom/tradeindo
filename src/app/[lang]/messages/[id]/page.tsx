@@ -1,220 +1,140 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/Button";
 
-type Message = {
-  id: string;
-  senderId: string;
-  senderName: string;
-  content: string;
-  createdAt: string;
-  isTemp?: boolean;
-  isFailed?: boolean;
-};
-
-export default function ChatRoom() {
+export default function ChatRoomPage() {
   const params = useParams();
+  const router = useRouter();
   const lang = params.lang === "en" ? "en" : "id";
   const conversationId = params.id as string;
   const { data: session } = useSession();
+  const myId = (session?.user as any)?.id;
 
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [product, setProduct] = useState<any>(null); 
-  const [inputValue, setInputValue] = useState("");
+  const [messages, setMessages] = useState<any[]>([]);
+  const [inputText, setInputText] = useState("");
   const [loading, setLoading] = useState(true);
+  const [sending, setSending] = useState(false);
+  const [conversation, setConversation] = useState<any>(null);
+  
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const pollingRef = useRef<NodeJS.Timeout | null>(null);
+
+  // CLASS INPUT AGAR TIDAK ABU-ABU DI HP
+  const inputClass = "flex-1 h-12 rounded-lg border border-neutral-300 px-4 text-sm bg-white text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-forest-700 focus:border-transparent dark:bg-neutral-800 dark:border-neutral-700 dark:text-white dark:placeholder:text-neutral-500 dark:focus:ring-lime-400";
+
+  const fetchMessages = async () => {
+    try {
+      const res = await fetch(`/api/messages?id=${conversationId}`);
+      if (!res.ok) throw new Error("Gagal memuat pesan");
+      const data = await res.json();
+      setMessages(data);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    fetch(`/api/messages?id=${conversationId}`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (Array.isArray(data)) setMessages(data);
-      })
-      .catch(console.error);
-
-    fetch(`/api/conversations/${conversationId}`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.product) setProduct(data.product);
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
+    fetchMessages();
+    // Polling setiap 3 detik untuk pesan baru
+    pollingRef.current = setInterval(fetchMessages, 3000);
+    return () => {
+      if (pollingRef.current) clearInterval(pollingRef.current);
+    };
   }, [conversationId]);
 
+  // Auto-scroll ke bawah saat ada pesan baru
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  async function handleSend(e: React.FormEvent) {
+  async function handleSendMessage(e: React.FormEvent) {
     e.preventDefault();
-    if (!inputValue.trim()) return;
+    if (!inputText.trim()) return;
 
-    const textToSend = inputValue.trim();
-    const tempId = `temp-${Date.now()}`;
-    
-    const tempMessage: Message = {
-      id: tempId,
-      senderId: (session?.user as any)?.id || "me",
-      senderName: session?.user?.name || "Saya",
-      content: textToSend,
-      createdAt: new Date().toISOString(),
-      isTemp: true,
-    };
-
-    setMessages((prev) => [...prev, tempMessage]);
-    setInputValue("");
-
+    setSending(true);
     try {
       const res = await fetch("/api/messages", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ conversationId, content: textToSend }),
+        body: JSON.stringify({ conversationId, content: inputText }),
       });
-
-      if (res.ok) {
-        const savedMessage = await res.json();
-        setMessages((prev) => prev.map((m) => (m.id === tempId ? savedMessage : m)));
-      } else {
-        throw new Error("Failed");
-      }
+      if (!res.ok) throw new Error("Gagal mengirim pesan");
+      
+      setInputText("");
+      fetchMessages(); // Refresh pesan
     } catch (err) {
-      setMessages((prev) =>
-        prev.map((m) => (m.id === tempId ? { ...m, isFailed: true, isTemp: false } : m))
-      );
+      toast.error("Gagal mengirim pesan.");
+    } finally {
+      setSending(false);
     }
   }
 
-  async function handleDeleteMessage(id: string) {
-    if (!confirm(lang === "en" ? "Delete this message?" : "Hapus pesan ini?")) return;
-    try {
-      const res = await fetch(`/api/messages/${id}`, { method: "DELETE" });
-      if (res.ok) {
-        setMessages((prev) => prev.filter((msg) => msg.id !== id));
-      } else {
-        const data = await res.json();
-        alert(data.error || "Gagal menghapus pesan.");
-      }
-    } catch (err) {
-      alert("Terjadi kesalahan.");
-    }
-  }
-
-  if (loading) return <div className="p-16 text-center">Memuat obrolan...</div>;
+  if (loading) return <div className="p-16 text-center text-neutral-500">Memuat obrolan...</div>;
 
   return (
-    // max-w-4xl agar lebih lebar, h-[calc(100vh-106px)] agar pas di layar (106px adalah tinggi header)
-    <div className="mx-auto max-w-4xl h-[calc(100vh-106px)] flex flex-col bg-neutral-50 dark:bg-neutral-950 border-x border-neutral-200 dark:border-neutral-800 shadow-sm relative">
+    <div className="mx-auto max-w-3xl h-[calc(100vh-120px)] flex flex-col bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl shadow-sm overflow-hidden my-4">
       
       {/* HEADER CHAT */}
-      <div className="bg-white dark:bg-neutral-900 border-b border-neutral-200 dark:border-neutral-800 p-4 flex items-center gap-3 shrink-0">
-        <Link href={`/${lang}/messages`} className="text-forest-700 hover:underline text-sm font-medium whitespace-nowrap">
-          ← {lang === "en" ? "Back" : "Kembali"}
+      <div className="shrink-0 flex items-center gap-3 p-4 border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900/50">
+        <Link href={`/${lang}/messages`} className="text-neutral-500 hover:text-forest-700 dark:hover:text-lime-400">
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
         </Link>
-        <h1 className="font-display font-bold text-lg">Ruang Obrolan</h1>
+        <div>
+          <h2 className="font-bold text-neutral-900 dark:text-white">Obrolan</h2>
+          <p className="text-xs text-neutral-500">Pesan akan diperbarui secara otomatis</p>
+        </div>
       </div>
 
-      {/* KARTU PRODUK */}
-      {product && (
-        <div className="bg-white dark:bg-neutral-900 border-b border-neutral-200 dark:border-neutral-800 p-3 shrink-0">
-          <Link 
-            href={`/${lang}/products/${product.slug}`}
-            className="flex items-center gap-3 bg-neutral-50 dark:bg-neutral-800 p-2 rounded-lg border border-neutral-200 dark:border-neutral-700 hover:border-forest-700 dark:hover:border-lime-400 transition-colors group"
-          >
-            <div className="h-12 w-12 shrink-0 rounded-md overflow-hidden bg-white border border-neutral-200">
-              {product.images?.[0]?.url ? (
-                <img src={product.images[0].url} alt={product.titleId} className="h-full w-full object-cover" />
-              ) : (
-                <div className="text-[10px] text-center mt-3 text-neutral-400">No Img</div>
-              )}
-            </div>
-            <div className="flex-1 min-w-0">
-              <h4 className="text-sm font-medium text-neutral-900 dark:text-white line-clamp-1 group-hover:text-forest-700 dark:group-hover:text-lime-400 transition-colors">
-                {lang === "en" ? product.titleEn : product.titleId}
-              </h4>
-              <p className="text-xs text-forest-700 dark:text-lime-400 font-semibold mt-0.5">
-                {product.priceMin ? `Rp ${product.priceMin.toLocaleString("id-ID")}+` : "Hubungi Supplier"}
-              </p>
-            </div>
-            <div className="shrink-0 text-neutral-400 pr-2">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
-            </div>
-          </Link>
-        </div>
-      )}
-
-      {/* AREA PESAN (Bisa di-scroll) */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {messages.map((msg) => {
-          const isMe = msg.senderId === (session?.user as any)?.id;
-          
-          const messageTime = new Date(msg.createdAt).toLocaleTimeString(
-            lang === "en" ? "en-GB" : "id-ID", 
-            { hour: "2-digit", minute: "2-digit" }
-          );
+      {/* AREA PESAN */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-neutral-50 dark:bg-neutral-950/50">
+        {messages.map((msg, index) => {
+          const isMe = msg.senderId === myId;
 
           return (
-            <div key={msg.id} className={`flex flex-col group ${isMe ? "items-end" : "items-start"}`}>
-              
-              <div className="flex items-center gap-2 mb-1 px-1">
-                <span className="text-[11px] font-medium text-neutral-600 dark:text-neutral-400">{msg.senderName}</span>
-                <span className="text-[10px] text-neutral-400">{messageTime}</span>
+            <div key={msg.id || index} className={`flex flex-col ${isMe ? "items-end" : "items-start"}`}>
+              <span className="text-[10px] text-neutral-500 mb-1 ml-1 mr-1">
+                {isMe ? "Anda" : msg.senderName}
+              </span>
+              <div 
+                className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm shadow-sm ${
+                  isMe 
+                    ? "bg-forest-700 text-white rounded-tr-sm" 
+                    : "bg-white text-neutral-900 border border-neutral-200 dark:bg-neutral-800 dark:text-white dark:border-neutral-700 rounded-tl-sm"
+                }`}
+              >
+                {msg.content}
               </div>
-              
-              <div className="flex items-center gap-2 max-w-[85%]">
-                {isMe && !msg.isTemp && (
-                  <button
-                    onClick={() => handleDeleteMessage(msg.id)}
-                    className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-600 transition-opacity text-xs font-medium shrink-0"
-                    title="Hapus pesan"
-                  >
-                    Hapus
-                  </button>
-                )}
-
-                <div
-                  className={`rounded-xl p-3 text-sm ${
-                    isMe
-                      ? "bg-forest-700 text-white rounded-tr-sm"
-                      : "bg-white border border-neutral-200 dark:border-neutral-700 dark:bg-neutral-800 rounded-tl-sm"
-                  } ${msg.isTemp ? "opacity-70" : "opacity-100"}`}
-                >
-                  {msg.content}
-                </div>
-              </div>
-
-              {msg.isTemp && <span className="text-[10px] text-neutral-400 mt-1 pr-1">Mengirim...</span>}
-              {msg.isFailed && (
-                <span className="text-[10px] text-red-500 mt-1 pr-1 flex items-center gap-1">
-                  ⚠️ Gagal terkirim.
-                </span>
-              )}
+              <span className="text-[10px] text-neutral-400 mt-1">
+                {new Date(msg.createdAt).toLocaleTimeString(lang === "en" ? "en-GB" : "id-ID", { hour: '2-digit', minute: '2-digit' })}
+              </span>
             </div>
           );
         })}
         <div ref={messagesEndRef} />
       </div>
 
-      {/* INPUT AREA (Selalu di bawah) */}
-      <form onSubmit={handleSend} className="bg-white dark:bg-neutral-900 p-4 border-t border-neutral-200 dark:border-neutral-800 shrink-0">
-        <div className="flex gap-2">
+      {/* AREA INPUT KETIK */}
+      <div className="shrink-0 p-4 border-t border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
+        <form onSubmit={handleSendMessage} className="flex gap-3">
           <input
             type="text"
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
+            value={inputText}
+            onChange={(e) => setInputText(e.target.value)}
             placeholder={lang === "en" ? "Type a message..." : "Ketik pesan..."}
-            className="flex-1 h-11 rounded-md border border-neutral-300 px-4 text-sm focus:outline-none focus:border-forest-700 dark:border-neutral-700 dark:bg-neutral-800"
+            className={inputClass}
+            disabled={sending}
           />
-          <button
-            type="submit"
-            disabled={!inputValue.trim()}
-            className="bg-forest-700 text-white px-6 rounded-md text-sm font-medium hover:bg-forest-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            {lang === "en" ? "Send" : "Kirim"}
-          </button>
-        </div>
-      </form>
+          <Button type="submit" disabled={!inputText.trim() || sending} className="h-12 px-6">
+            {sending ? "..." : (lang === "en" ? "Send" : "Kirim")}
+          </Button>
+        </form>
+      </div>
 
     </div>
   );

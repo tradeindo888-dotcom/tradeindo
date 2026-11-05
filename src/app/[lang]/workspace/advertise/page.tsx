@@ -27,7 +27,9 @@ export default function AdvertisePage() {
   const [proofPreview, setProofPreview] = useState<string | null>(null);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
-  // Efek menutup zoom dengan tombol Escape
+  // CLASS INPUT AGAR TIDAK ABU-ABU DI HP
+  const inputClass = "w-full h-11 rounded-md border border-neutral-300 px-3 text-sm bg-white text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-forest-700 focus:border-transparent dark:bg-neutral-800 dark:border-neutral-700 dark:text-white dark:placeholder:text-neutral-500 dark:focus:ring-lime-400";
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
@@ -38,12 +40,10 @@ export default function AdvertisePage() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
-  // LANGSUNG TERIMA GAMBAR TANPA CROP
   const handleBannerUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     
-    // Validasi ukuran maksimal 10MB
     if (file.size > 10 * 1024 * 1024) {
       toast.error("Ukuran gambar maksimal 10MB.");
       e.target.value = "";
@@ -73,14 +73,14 @@ export default function AdvertisePage() {
     setLoading(true);
     
     try {
-      // 1. Upload Banner ke API Publik (bebas ukuran asli)
+      // 1. Upload Banner
       const fd1 = new FormData(); 
       fd1.append("file", bannerFile);
       const res1 = await fetch("/api/upload/public", { method: "POST", body: fd1 });
       if (!res1.ok) throw new Error("Gagal upload banner");
       const data1 = await res1.json();
 
-      // 2. Upload Bukti Transfer
+      // 2. Upload Bukti TF
       const fd2 = new FormData(); 
       fd2.append("file", proofFile);
       const res2 = await fetch("/api/upload/public", { method: "POST", body: fd2 });
@@ -165,7 +165,7 @@ export default function AdvertisePage() {
               Gambar Banner (Bebas Ukuran, Maks 10MB)
             </span>
             {bannerPreview ? (
-              <div className="relative rounded-lg overflow-hidden border border-neutral-200 dark:border-neutral-700 group mb-2 bg-neutral-100 flex items-center justify-center min-h-[150px] p-2">
+              <div className="relative rounded-lg overflow-hidden border border-neutral-200 dark:border-neutral-700 group mb-2 bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center min-h-[150px] p-2">
                 <img 
                   src={bannerPreview} 
                   alt="Preview Banner" 
@@ -177,7 +177,7 @@ export default function AdvertisePage() {
             ) : (
               <div className="relative">
                 <input type="file" accept="image/*" onChange={handleBannerUpload} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
-                <div className="flex flex-col items-center justify-center h-24 border-2 border-dashed rounded-lg bg-neutral-50 hover:bg-neutral-100 dark:bg-neutral-800 dark:border-neutral-700 transition-colors">
+                <div className="flex flex-col items-center justify-center h-24 border-2 border-dashed border-neutral-300 dark:border-neutral-700 rounded-lg bg-white dark:bg-neutral-900 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors">
                   <span className="text-2xl mb-1">🖼️</span>
                   <span className="text-xs font-medium text-neutral-500">Klik pilih gambar banner</span>
                 </div>
@@ -196,7 +196,7 @@ export default function AdvertisePage() {
             ) : (
               <div className="relative">
                 <input type="file" accept="image/*" onChange={handleProofUpload} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
-                <div className="flex flex-col items-center justify-center h-24 border-2 border-dashed rounded-lg bg-neutral-50 hover:bg-neutral-100 dark:bg-neutral-800 dark:border-neutral-700 transition-colors">
+                <div className="flex flex-col items-center justify-center h-24 border-2 border-dashed border-neutral-300 dark:border-neutral-700 rounded-lg bg-white dark:bg-neutral-900 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors">
                   <span className="text-2xl mb-1">🧾</span>
                   <span className="text-xs font-medium text-neutral-500">Klik pilih bukti transfer</span>
                 </div>
@@ -206,12 +206,12 @@ export default function AdvertisePage() {
 
           <div>
             <span className="text-xs font-medium text-neutral-500 block mb-1">Judul Banner (Opsional)</span>
-            <input type="text" value={bannerTitle} onChange={e => setBannerTitle(e.target.value)} placeholder="Promo Spesial Akhir Tahun" className="w-full h-10 rounded-md border px-3 text-sm dark:bg-neutral-900 dark:border-neutral-700" />
+            <input type="text" value={bannerTitle} onChange={e => setBannerTitle(e.target.value)} placeholder="Promo Spesial Akhir Tahun" className={inputClass} />
           </div>
 
           <div>
             <span className="text-xs font-medium text-neutral-500 block mb-1">Link Tujuan (Opsional)</span>
-            <input type="url" value={bannerLink} onChange={e => setBannerLink(e.target.value)} placeholder="https://toko-anda.com" className="w-full h-10 rounded-md border px-3 text-sm dark:bg-neutral-900 dark:border-neutral-700" />
+            <input type="url" value={bannerLink} onChange={e => setBannerLink(e.target.value)} placeholder="https://toko-anda.com" className={inputClass} />
           </div>
 
           <Button type="submit" disabled={loading} className="w-full h-12 mt-4 text-base shadow-md hover:shadow-lg transition-all">
@@ -220,7 +220,7 @@ export default function AdvertisePage() {
         </div>
       </form>
 
-      {/* LIGHTBOX ZOOM GAMBAR (PREVIEW BIASA) */}
+      {/* LIGHTBOX ZOOM GAMBAR */}
       {selectedImage && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/90 p-4 backdrop-blur-sm" onClick={() => setSelectedImage(null)}>
           <div className="relative max-w-5xl max-h-[95vh]">

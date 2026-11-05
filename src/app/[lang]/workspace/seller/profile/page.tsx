@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
+import { toast } from "sonner";
 
 export default function EditProfile() {
   const params = useParams();
@@ -14,11 +15,18 @@ export default function EditProfile() {
   const [saving, setSaving] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // CLASS INPUT AGAR TIDAK ABU-ABU DI HP
+  const inputClass = "w-full h-11 rounded-md border border-neutral-300 px-3 text-sm bg-white text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-forest-700 focus:border-transparent dark:bg-neutral-800 dark:border-neutral-700 dark:text-white dark:placeholder:text-neutral-500 dark:focus:ring-lime-400";
+
   useEffect(() => {
     fetch("/api/seller/profile")
       .then(res => res.json())
       .then(data => {
         setProfile(data);
+        setLoading(false);
+      })
+      .catch(() => {
+        toast.error("Gagal memuat profil.");
         setLoading(false);
       });
   }, []);
@@ -27,18 +35,26 @@ export default function EditProfile() {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    if (file.size > 5 * 1024 * 1024) {
+      return toast.error("Ukuran gambar maksimal 5MB.");
+    }
+
     setUploading(true);
     const formData = new FormData();
     formData.append("file", file);
 
-    const res = await fetch("/api/upload", { method: "POST", body: formData });
-    if (res.ok) {
+    try {
+      const res = await fetch("/api/upload/public", { method: "POST", body: formData });
+      if (!res.ok) throw new Error();
       const data = await res.json();
       setProfile({ ...profile, logoUrl: data.url });
-    } else {
-      alert("Gagal upload logo.");
+      toast.success("Logo berhasil diunggah.");
+    } catch {
+      toast.error("Gagal upload logo.");
+    } finally {
+      setUploading(false);
+      e.target.value = "";
     }
-    setUploading(false);
   }
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -46,7 +62,6 @@ export default function EditProfile() {
     setSaving(true);
     const fd = new FormData(e.currentTarget);
     
-    // Tambahkan address dan phone ke dalam body
     const body = {
       name: fd.get("name"),
       description: fd.get("description"),
@@ -60,18 +75,26 @@ export default function EditProfile() {
       logoUrl: profile.logoUrl,
     };
 
-    await fetch("/api/seller/profile", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
+    try {
+      const res = await fetch("/api/seller/profile", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
 
-    setSaving(false);
-    router.push(`/${lang}/workspace/seller`);
-    router.refresh();
+      if (!res.ok) throw new Error();
+      
+      toast.success("Profil perusahaan berhasil diperbarui!");
+      router.push(`/${lang}/workspace/seller`);
+      router.refresh();
+    } catch {
+      toast.error("Gagal menyimpan perubahan.");
+    } finally {
+      setSaving(false);
+    }
   }
 
-  if (loading) return <div className="p-8 text-center">Memuat profil...</div>;
+  if (loading) return <div className="p-8 text-center text-neutral-500">Memuat profil...</div>;
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-8">
@@ -79,73 +102,76 @@ export default function EditProfile() {
       
       <form onSubmit={onSubmit} className="space-y-6">
         {/* Logo Upload */}
-        <div className="flex items-center gap-4">
-          <div className="flex h-24 w-40 shrink-0 items-center justify-center rounded-md border border-neutral-300 bg-white overflow-hidden dark:border-neutral-700">
+        <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
+          <div className="flex h-32 w-48 shrink-0 items-center justify-center rounded-lg border border-neutral-300 bg-white overflow-hidden dark:border-neutral-700 dark:bg-neutral-900">
             {profile.logoUrl ? (
               <img src={profile.logoUrl} alt="Logo" className="h-full w-full object-contain p-2" />
             ) : (
               <span className="text-xs text-neutral-400">Belum ada logo</span>
             )}
          </div>
-          <div>
+          <div className="flex flex-col gap-2">
             <input type="file" ref={fileInputRef} onChange={handleLogoUpload} className="hidden" accept="image/*" />
             <Button type="button" variant="secondary" onClick={() => fileInputRef.current?.click()} disabled={uploading}>
               {uploading ? "Mengunggah..." : "Ubah Logo"}
             </Button>
+            <p className="text-xs text-neutral-500">Maksimal 5MB. Format JPG/PNG.</p>
           </div>
         </div>
 
         <div>
-          <label className="text-sm font-medium">Nama Perusahaan</label>
-          <input name="name" defaultValue={profile.name} required className="mt-1 h-11 w-full rounded-md border border-neutral-300 px-3 text-sm dark:border-neutral-700 dark:bg-neutral-900" />
+          <label className="text-sm font-medium block mb-1">Nama Perusahaan</label>
+          <input name="name" defaultValue={profile.name} required className={inputClass} />
         </div>
 
         <div>
-          <label className="text-sm font-medium">Deskripsi Perusahaan</label>
-          <textarea name="description" defaultValue={profile.description || ""} rows={4} className="mt-1 w-full rounded-md border border-neutral-300 p-3 text-sm dark:border-neutral-700 dark:bg-neutral-900" placeholder="Ceritakan tentang perusahaan Anda..." />
+          <label className="text-sm font-medium block mb-1">Deskripsi Perusahaan</label>
+          <textarea name="description" defaultValue={profile.description || ""} rows={4} className={`${inputClass} h-auto py-3`} placeholder="Ceritakan tentang perusahaan Anda..." />
         </div>
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="text-sm font-medium">Kota</label>
-            <input name="city" defaultValue={profile.city || ""} className="mt-1 h-11 w-full rounded-md border border-neutral-300 px-3 text-sm dark:border-neutral-700 dark:bg-neutral-900" />
+            <label className="text-sm font-medium block mb-1">Kota</label>
+            <input name="city" defaultValue={profile.city || ""} className={inputClass} />
           </div>
           <div>
-            <label className="text-sm font-medium">Provinsi</label>
-            <input name="province" defaultValue={profile.province || ""} className="mt-1 h-11 w-full rounded-md border border-neutral-300 px-3 text-sm dark:border-neutral-700 dark:bg-neutral-900" />
+            <label className="text-sm font-medium block mb-1">Provinsi</label>
+            <input name="province" defaultValue={profile.province || ""} className={inputClass} />
           </div>
         </div>
 
         {/* Website & Tahun Berdiri */}
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="text-sm font-medium">Website</label>
-            <input name="website" defaultValue={profile.website || ""} placeholder="https://..." className="mt-1 h-11 w-full rounded-md border border-neutral-300 px-3 text-sm dark:border-neutral-700 dark:bg-neutral-900" />
+            <label className="text-sm font-medium block mb-1">Website</label>
+            <input name="website" defaultValue={profile.website || ""} placeholder="https://..." className={inputClass} />
           </div>
           <div>
-            <label className="text-sm font-medium">Tahun Berdiri</label>
-            <input name="yearEstablished" type="number" defaultValue={profile.yearEstablished || ""} placeholder="2020" className="mt-1 h-11 w-full rounded-md border border-neutral-300 px-3 text-sm dark:border-neutral-700 dark:bg-neutral-900" />
+            <label className="text-sm font-medium block mb-1">Tahun Berdiri</label>
+            <input name="yearEstablished" type="number" defaultValue={profile.yearEstablished || ""} placeholder="2020" className={inputClass} />
           </div>
         </div>
 
         {/* Alamat & Telepon */}
         <div>
-          <label className="text-sm font-medium">Alamat Lengkap</label>
-          <input name="address" defaultValue={profile.address || ""} placeholder="Jl. Contoh No. 123" className="mt-1 h-11 w-full rounded-md border border-neutral-300 px-3 text-sm dark:border-neutral-700 dark:bg-neutral-900" />
+          <label className="text-sm font-medium block mb-1">Alamat Lengkap</label>
+          <input name="address" defaultValue={profile.address || ""} placeholder="Jl. Contoh No. 123" className={inputClass} />
         </div>
         <div>
-          <label className="text-sm font-medium">Nomor Telepon</label>
-          <input name="phone" defaultValue={profile.phone || ""} placeholder="021-1234567 atau 08123456789" className="mt-1 h-11 w-full rounded-md border border-neutral-300 px-3 text-sm dark:border-neutral-700 dark:bg-neutral-900" />
+          <label className="text-sm font-medium block mb-1">Nomor Telepon</label>
+          <input name="phone" defaultValue={profile.phone || ""} placeholder="021-1234567 atau 08123456789" className={inputClass} />
         </div>
 
-        <div className="flex items-center gap-2">
-          <input type="checkbox" name="exportCapability" defaultChecked={profile.exportCapability} className="h-4 w-4" id="export" />
-          <label htmlFor="export" className="text-sm font-medium">Perusahaan ini mampu melayani ekspor</label>
+        <div className="flex items-center gap-2 pt-2">
+          <input type="checkbox" name="exportCapability" defaultChecked={profile.exportCapability} className="h-4 w-4 accent-forest-700 rounded border-neutral-300" id="export" />
+          <label htmlFor="export" className="text-sm font-medium cursor-pointer">Perusahaan ini mampu melayani ekspor</label>
         </div>
 
-        <div className="flex gap-3 pt-4">
-          <Button type="submit" disabled={saving}>{saving ? "Menyimpan..." : "Simpan Perubahan"}</Button>
-          <Button type="button" variant="ghost" onClick={() => router.push(`/${lang}/workspace/seller`)}>Batal</Button>
+        <div className="flex gap-3 pt-6 border-t border-neutral-200 dark:border-neutral-800">
+          <Button type="submit" disabled={saving} className="flex-1 h-11">
+            {saving ? "Menyimpan..." : "Simpan Perubahan"}
+          </Button>
+          <Button type="button" variant="ghost" onClick={() => router.push(`/${lang}/workspace/seller`)} className="h-11">Batal</Button>
         </div>
       </form>
     </div>

@@ -30,6 +30,9 @@ export default function SponsorProductPage() {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // CLASS INPUT AGAR TIDAK ABU-ABU DI HP
+  const inputClass = "w-full h-11 rounded-md border border-neutral-300 px-3 text-sm bg-white text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-forest-700 focus:border-transparent dark:bg-neutral-800 dark:border-neutral-700 dark:text-white dark:placeholder:text-neutral-500 dark:focus:ring-lime-400";
+
   useEffect(() => {
     fetch("/api/seller/sponsor/plans")
       .then(r => r.ok ? r.json() : Promise.reject())
@@ -75,7 +78,7 @@ export default function SponsorProductPage() {
     const submitPromise = (async () => {
       const fd = new FormData();
       fd.append("file", file);
-      const uploadRes = await fetch("/api/upload", { method: "POST", body: fd });
+      const uploadRes = await fetch("/api/upload/public", { method: "POST", body: fd });
       if (!uploadRes.ok) throw new Error("upload");
       const { url } = await uploadRes.json();
 
@@ -109,24 +112,19 @@ export default function SponsorProductPage() {
       },
     });
 
-    try {
-      await submitPromise;
-    } catch (err) {
-    } finally {
-      setLoading(false);
-    }
+    try { await submitPromise; } catch (err) {} finally { setLoading(false); }
   }
 
-  if (loadingPlans) return <div className="mx-auto max-w-2xl px-4 py-16 text-center">Loading…</div>;
+  if (loadingPlans) return <div className="mx-auto max-w-2xl px-4 py-16 text-center text-neutral-500">Memuat paket...</div>;
 
   if (!canSubmit) {
     return (
       <div className="mx-auto max-w-2xl px-4 py-8">
         <h1 className="font-display text-2xl font-bold mb-4">Promote Product</h1>
-        <div className="rounded-lg border border-amber-200 bg-amber-50 p-6 text-amber-900">
+        <div className="rounded-lg border border-amber-200 bg-amber-50 p-6 text-amber-900 dark:bg-amber-900/20 dark:border-amber-900/50 dark:text-amber-300">
           <p className="font-semibold">Anda telah mencapai batas sponsorship aktif.</p>
           <p className="text-sm mt-2">Aktif: {activeCount} / {maxActive}.</p>
-          <Link href={`/${lang}/workspace/seller`} className="mt-4 inline-block text-sm font-medium text-amber-800 underline">
+          <Link href={`/${lang}/workspace/seller`} className="mt-4 inline-block text-sm font-medium text-amber-800 dark:text-amber-400 underline">
             Kembali ke Dashboard
           </Link>
         </div>
@@ -144,13 +142,13 @@ export default function SponsorProductPage() {
       </p>
 
       <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
-        <button onClick={() => { setSelectedTier("STANDARD"); setSelectedDays(30); }} className={`px-4 py-2 text-sm font-medium rounded-lg border-2 transition-all ${selectedTier === "STANDARD" ? "border-forest-700 bg-forest-700 text-white" : "border-neutral-200 text-neutral-600 hover:border-forest-700"}`}>
+        <button onClick={() => { setSelectedTier("STANDARD"); setSelectedDays(30); }} className={`px-4 py-2 text-sm font-medium rounded-lg border-2 transition-all whitespace-nowrap ${selectedTier === "STANDARD" ? "border-forest-700 bg-forest-700 text-white" : "border-neutral-200 text-neutral-600 hover:border-forest-700 dark:border-neutral-700 dark:text-neutral-400 dark:hover:border-forest-500"}`}>
           Standard
         </button>
-        <button onClick={() => { setSelectedTier("CATEGORY"); setSelectedDays(30); }} className={`px-4 py-2 text-sm font-medium rounded-lg border-2 transition-all ${selectedTier === "CATEGORY" ? "border-forest-700 bg-forest-700 text-white" : "border-neutral-200 text-neutral-600 hover:border-forest-700"}`}>
+        <button onClick={() => { setSelectedTier("CATEGORY"); setSelectedDays(30); }} className={`px-4 py-2 text-sm font-medium rounded-lg border-2 transition-all whitespace-nowrap ${selectedTier === "CATEGORY" ? "border-forest-700 bg-forest-700 text-white" : "border-neutral-200 text-neutral-600 hover:border-forest-700 dark:border-neutral-700 dark:text-neutral-400 dark:hover:border-forest-500"}`}>
           Category Spotlight
         </button>
-        <button onClick={() => { setSelectedTier("HOMEPAGE"); setSelectedDays(30); }} className={`px-4 py-2 text-sm font-medium rounded-lg border-2 transition-all ${selectedTier === "HOMEPAGE" ? "border-forest-700 bg-forest-700 text-white" : "border-neutral-200 text-neutral-600 hover:border-forest-700"}`}>
+        <button onClick={() => { setSelectedTier("HOMEPAGE"); setSelectedDays(30); }} className={`px-4 py-2 text-sm font-medium rounded-lg border-2 transition-all whitespace-nowrap ${selectedTier === "HOMEPAGE" ? "border-forest-700 bg-forest-700 text-white" : "border-neutral-200 text-neutral-600 hover:border-forest-700 dark:border-neutral-700 dark:text-neutral-400 dark:hover:border-forest-500"}`}>
           Homepage Feature
         </button>
       </div>
@@ -166,7 +164,7 @@ export default function SponsorProductPage() {
               onMouseLeave={() => setHoveredPlan(null)}
               onClick={() => setSelectedDays(plan.durationDays)}
               className={`relative rounded-lg border-2 p-4 text-center transition-all duration-300 ease-out z-0 ${
-                isHighlighted ? "border-forest-700 bg-forest-700/5 ring-2 ring-lime-400 shadow-lg z-10" : "border-neutral-200"
+                isHighlighted ? "border-forest-700 bg-forest-700/5 ring-2 ring-lime-400 shadow-lg z-10" : "border-neutral-200 dark:border-neutral-700"
               } ${hoveredPlan === plan.durationDays ? "scale-[1.04] -translate-y-1 shadow-xl" : ""}`}
             >
               {plan.badge === "popular" && (
@@ -174,8 +172,8 @@ export default function SponsorProductPage() {
                   {lang === "en" ? "POPULAR" : "POPULER"}
                 </div>
               )}
-              <div className="font-bold text-lg">{lang === "en" ? plan.labelEn : plan.label}</div>
-              <div className="text-sm text-neutral-600 mt-1">Rp {plan.price.toLocaleString("id-ID")}</div>
+              <div className="font-bold text-lg text-neutral-900 dark:text-white">{lang === "en" ? plan.labelEn : plan.label}</div>
+              <div className="text-sm text-neutral-600 dark:text-neutral-400 mt-1">Rp {plan.price.toLocaleString("id-ID")}</div>
               {plan.savingsPercent && <div className="text-xs text-green-600 font-medium mt-1">Hemat {plan.savingsPercent}%</div>}
             </button>
           );
@@ -183,8 +181,8 @@ export default function SponsorProductPage() {
       </div>
 
       {/* INPUT LABEL PROMOSI */}
-      <div className="rounded-lg border bg-white p-5 mb-6">
-        <label className="text-sm font-medium block mb-1">
+      <div className="rounded-lg border border-neutral-200 bg-white p-5 mb-6 dark:border-neutral-800 dark:bg-neutral-900">
+        <label className="text-sm font-medium block mb-1 text-neutral-900 dark:text-white">
           {lang === "en" ? "Promo Label (Optional)" : "Label Promosi (Opsional)"}
         </label>
         <p className="text-xs text-neutral-500 mb-2">
@@ -196,39 +194,39 @@ export default function SponsorProductPage() {
           onChange={(e) => setPromoLabel(e.target.value)}
           maxLength={25}
           placeholder={lang === "en" ? "e.g. 20% OFF" : "Misal: Diskon 20%"} 
-          className="h-11 w-full rounded-md border border-neutral-300 px-3 text-sm focus:border-forest-700 focus:outline-none focus:ring-1 focus:ring-forest-700 dark:border-neutral-700 dark:bg-neutral-900" 
+          className={inputClass} 
         />
       </div>
 
       {selectedPlan && (
-        <div className="rounded-lg border bg-white p-5 mb-6">
-          <p className="text-sm mb-2">Transfer sejumlah:</p>
-          <div className="text-3xl font-bold text-forest-700 mb-3">Rp {selectedPlan.price.toLocaleString("id-ID")}</div>
+        <div className="rounded-lg border border-neutral-200 bg-white p-5 mb-6 dark:border-neutral-800 dark:bg-neutral-900">
+          <p className="text-sm mb-2 text-neutral-900 dark:text-white">Transfer sejumlah:</p>
+          <div className="text-3xl font-bold text-forest-700 dark:text-lime-400 mb-3">Rp {selectedPlan.price.toLocaleString("id-ID")}</div>
           
-          {/* REKENING SUDAH DIGANTI DI SINI */}
-          <div className="bg-neutral-100 p-3 rounded text-sm space-y-1">
+          <div className="bg-neutral-100 dark:bg-neutral-800 p-3 rounded text-sm space-y-1 text-neutral-800 dark:text-neutral-200">
             <p><strong>Bank BCA</strong> · <strong>3491108558</strong></p>
             <p>Atas nama: <strong>Kevin Indo Trade</strong></p>
           </div>
         </div>
       )}
 
-      <form onSubmit={onSubmit} className="rounded-lg border border-dashed p-5">
-        <label className="text-sm font-medium block mb-2">Upload Bukti Transfer</label>
-        <input type="file" accept="image/jpeg,image/png,image/webp" ref={fileInputRef} onChange={e => { setFile(e.target.files?.[0] ?? null); }} className="block w-full text-sm" />
+      <form onSubmit={onSubmit} className="rounded-lg border border-dashed border-neutral-300 dark:border-neutral-700 p-5 bg-white dark:bg-neutral-900">
+        <label className="text-sm font-medium block mb-2 text-neutral-900 dark:text-white">Upload Bukti Transfer</label>
+        <input type="file" accept="image/jpeg,image/png,image/webp" ref={fileInputRef} onChange={e => { setFile(e.target.files?.[0] ?? null); }} className="block w-full text-sm text-neutral-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:font-semibold file:bg-forest-700 file:text-white hover:file:bg-forest-500" />
         
         {preview && (
           <div className="mt-3 relative group w-fit">
-            <img src={preview} alt="Preview" className="max-h-48 rounded border object-contain cursor-pointer hover:opacity-90" onClick={() => setSelectedImage(preview)} />
+            <img src={preview} alt="Preview" className="max-h-48 rounded border border-neutral-200 dark:border-neutral-700 object-contain cursor-pointer hover:opacity-90" onClick={() => setSelectedImage(preview)} />
             <button type="button" onClick={() => { setFile(null); if (fileInputRef.current) fileInputRef.current.value = ""; }} className="absolute -top-2 -right-2 bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs shadow-md">✕</button>
           </div>
         )}
         
-        <Button type="submit" disabled={loading || !file} className="w-full mt-4">
+        <Button type="submit" disabled={loading || !file} className="w-full mt-4 h-12 text-base font-bold">
           {loading ? "Mengirim…" : "Ajukan Sponsorship"}
         </Button>
       </form>
 
+      {/* LIGHTBOX ZOOM GAMBAR */}
       {selectedImage && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm" onClick={() => setSelectedImage(null)}>
           <div className="relative max-w-4xl max-h-[90vh]">

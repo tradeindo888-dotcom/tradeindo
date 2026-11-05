@@ -1,122 +1,128 @@
 "use client";
+import { useState, useEffect } from "react";
 import { signIn } from "next-auth/react";
-import { useParams, useSearchParams } from "next/navigation";
-import { useState, Suspense } from "react";
-import { Button } from "@/components/ui/Button";
+import { useRouter, useParams, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/Button";
 
-function LoginForm() {
+export default function LoginPage() {
+  const router = useRouter();
   const params = useParams();
   const searchParams = useSearchParams();
   const lang = params.lang === "en" ? "en" : "id";
-  
-  const [error, setError] = useState<string | null>(null);
+
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  
+  // Cek callbackUrl (jika diarahkan dari halaman lain karena belum login)
+  const callbackUrl = searchParams.get("callbackUrl") || `/${lang}/workspace`;
+  // Cek pesan verifikasi (jika diarahkan dari link email)
+  const verified = searchParams.get("verified");
+  const errorParam = searchParams.get("error");
 
-  const isVerified = searchParams.get("verified") === "true";
-  const isTokenExpired = searchParams.get("error") === "token_expired";
+  useEffect(() => {
+    if (verified === "true") {
+      toast.success(
+        lang === "en"
+          ? "Email verified successfully! Please log in."
+          : "Email berhasil diverifikasi! Silakan masuk."
+      );
+    } else if (errorParam === "invalid_token") {
+      toast.error(lang === "en" ? "Invalid verification link." : "Link verifikasi tidak valid.");
+    } else if (errorParam === "token_expired") {
+      toast.error(lang === "en" ? "Verification link has expired." : "Link verifikasi sudah kedaluwarsa.");
+    }
+  }, [verified, errorParam, lang]);
 
-  async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
-    setError(null);
-    
-    const fd = new FormData(e.currentTarget);
-    const res = await signIn("credentials", { 
-      email: fd.get("email"), 
-      password: fd.get("password"), 
-      redirect: false 
-    });
 
-    setLoading(false);
+    try {
+      const res = await signIn("credentials", {
+        email,
+        password,
+        redirect: false,
+      });
 
-    if (res?.error) {
-      if (res.error === "EmailNotVerified") {
-        setError(lang === "en" ? "Please verify your email first." : "Silakan verifikasi email Anda terlebih dahulu.");
-      } else if (res.error.includes("AccountSuspended")) {
-        const reason = res.error.split(":")[1] || "Pelanggaran aturan platform.";
-        setError(lang === "en" ? `Your account is suspended. Reason: ${reason}` : `Akun Anda ditangguhkan. Alasan: ${reason}`);
-      } else if (res.error.includes("AccountBanned")) {
-        const reason = res.error.split(":")[1] || "Akun diblokir permanen.";
-        setError(lang === "en" ? `Your account is permanently banned. Reason: ${reason}` : `Akun Anda diblokir permanen. Alasan: ${reason}`);
-      } else {
-        setError(lang === "en" ? "Invalid email or password." : "Email atau password salah.");
-      }
-    } else {
-      const nextUrl = searchParams.get("next");
-      if (nextUrl) {
-        window.location.href = nextUrl;
-      } else {
-        try {
-          const sessionRes = await fetch("/api/auth/session");
-          const sessionData = await sessionRes.json();
-          
-          if (sessionData?.user?.role === "ADMIN") {
-            window.location.href = `/${lang}/admin`;
-          } else if (sessionData?.user?.role === "SUPPLIER") {
-            window.location.href = `/${lang}/workspace/seller`;
-          } else {
-            window.location.href = `/${lang}`;
-          }
-        } catch (err) {
-          window.location.href = `/${lang}`;
+      if (res?.error) {
+        if (res.error.includes("EmailNotVerified")) {
+          toast.error(lang === "en" ? "Please verify your email first." : "Silakan verifikasi email Anda terlebih dahulu.");
+        } else if (res.error.includes("AccountSuspended")) {
+          const reason = res.error.split(":")[1] || (lang === "en" ? "Violation of rules." : "Pelanggaran aturan.");
+          toast.error(lang === "en" ? `Account suspended: ${reason}` : `Akun ditangguhkan: ${reason}`);
+        } else if (res.error.includes("AccountBanned")) {
+          const reason = res.error.split(":")[1] || (lang === "en" ? "Permanently banned." : "Diblokir permanen.");
+          toast.error(lang === "en" ? `Account banned: ${reason}` : `Akun diblokir: ${reason}`);
+        } else {
+          toast.error(lang === "en" ? "Invalid email or password." : "Email atau password salah.");
         }
+      } else {
+        toast.success(lang === "en" ? "Logged in successfully!" : "Berhasil masuk!");
+        router.push(callbackUrl);
+        router.refresh();
       }
+    } catch (err) {
+      toast.error(lang === "en" ? "An error occurred." : "Terjadi kesalahan sistem.");
+    } finally {
+      setLoading(false);
     }
   }
 
   return (
-    <div className="mx-auto max-w-md px-4 py-16">
-      <h1 className="font-display text-2xl font-bold">{lang === "en" ? "Sign In" : "Masuk"}</h1>
-      
-      {isVerified && (
-        <div className="mt-4 p-3 bg-green-50 text-green-700 rounded-md text-sm border border-green-200 dark:bg-green-900/30 dark:border-green-800 dark:text-green-400">
-          {lang === "en" ? "Email verified successfully! You can now log in." : "Email berhasil diverifikasi! Silakan login."}
-        </div>
-      )}
-      {isTokenExpired && (
-        <div className="mt-4 p-3 bg-red-50 text-red-700 rounded-md text-sm border border-red-200 dark:bg-red-900/30 dark:border-red-800 dark:text-red-400">
-          {lang === "en" ? "Verification link is invalid or expired." : "Link verifikasi tidak valid atau sudah kedaluwarsa."}
-        </div>
-      )}
+    <div className="mx-auto flex min-h-[70vh] max-w-md flex-col justify-center px-4 py-12">
+      <div className="mb-8 text-center">
+        <h1 className="font-display text-3xl font-bold mb-2">
+          {lang === "en" ? "Sign In" : "Masuk"}
+        </h1>
+        <p className="text-sm text-neutral-600 dark:text-neutral-400">
+          {lang === "en" ? "Enter your credentials to access your account." : "Masukkan kredensial Anda untuk mengakses akun."}
+        </p>
+      </div>
 
-      <form onSubmit={onSubmit} className="mt-6 space-y-4">
+      <form onSubmit={handleSubmit} className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl p-6 shadow-sm space-y-5">
         <div>
-          <label className="text-sm font-medium">Email</label>
-          <input name="email" type="email" required className="mt-1 h-11 w-full rounded-md border border-neutral-300 px-3 text-sm dark:border-neutral-700 dark:bg-neutral-900" />
+          <label className="text-sm font-medium block mb-1">Email</label>
+          <input
+            required
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="w-full h-11 rounded-md border border-neutral-300 px-3 text-sm bg-white text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-forest-700 focus:border-transparent dark:bg-neutral-800 dark:border-neutral-700 dark:text-white dark:placeholder:text-neutral-500 dark:focus:ring-lime-400"
+            placeholder="email@contoh.com"
+          />
         </div>
-        
+
         <div>
-          <div className="flex items-center justify-between">
-            <label className="text-sm font-medium">Password</label>
+          <div className="flex justify-between items-center mb-1">
+            <label className="text-sm font-medium block">Password</label>
             <Link href={`/${lang}/forgot-password`} className="text-xs text-forest-700 hover:underline dark:text-lime-400 font-medium">
               {lang === "en" ? "Forgot password?" : "Lupa password?"}
             </Link>
           </div>
-          <input name="password" type="password" required className="mt-1 h-11 w-full rounded-md border border-neutral-300 px-3 text-sm dark:border-neutral-700 dark:bg-neutral-900" />
+          <input
+            required
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="w-full h-11 rounded-md border border-neutral-300 px-3 text-sm bg-white text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-forest-700 focus:border-transparent dark:bg-neutral-800 dark:border-neutral-700 dark:text-white dark:placeholder:text-neutral-500 dark:focus:ring-lime-400"
+            placeholder="••••••••"
+          />
         </div>
-        
-        {error && <p className="text-sm text-red-600 bg-red-50 p-2 rounded leading-relaxed">{error}</p>}
-        
-        <Button type="submit" disabled={loading} className="w-full">
+
+        <Button type="submit" disabled={loading} className="w-full h-11 text-base font-bold">
           {loading ? (lang === "en" ? "Signing in..." : "Memproses...") : (lang === "en" ? "Sign In" : "Masuk")}
         </Button>
-      </form>
-      
-      <p className="mt-6 text-sm text-center text-neutral-600 dark:text-neutral-400">
-        {lang === "en" ? "Don't have an account?" : "Belum punya akun?"} {" "}
-        <Link href={`/${lang}/register`} className="text-forest-700 hover:underline dark:text-lime-400 font-medium">
-          {lang === "en" ? "Register" : "Daftar"}
-        </Link>
-      </p>
-    </div>
-  );
-}
 
-export default function LoginPage() {
-  return (
-    <Suspense fallback={<div className="p-16 text-center">Memuat halaman login...</div>}>
-      <LoginForm />
-    </Suspense>
+        <div className="text-center text-sm text-neutral-600 dark:text-neutral-400 pt-2">
+          {lang === "en" ? "Don't have an account? " : "Belum punya akun? "}
+          <Link href={`/${lang}/register`} className="text-forest-700 font-bold hover:underline dark:text-lime-400">
+            {lang === "en" ? "Register here" : "Daftar di sini"}
+          </Link>
+        </div>
+      </form>
+    </div>
   );
 }

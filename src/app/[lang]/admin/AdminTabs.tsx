@@ -20,7 +20,7 @@ export default function AdminTabs({
   userChartData?: any[]; totalUsers?: number;
   lang?: string;
 }) {
-  const [activeTab, setActiveTab] = useState<"subscriptions" | "companies" | "sponsors" | "users" | "banners" | "pending_banners" | "reports" | "ad_revenue" | "sub_revenue" | "total_revenue" | "user_growth">("subscriptions");
+  const [activeTab, setActiveTab] = useState<"subscriptions" | "companies" | "sponsors" | "users" | "banners" | "pending_banners" | "reports" | "ad_revenue" | "sub_revenue" | "total_revenue" | "user_growth" | "broadcast">("subscriptions");
   
   // State Modal Verifikasi
   const [reviewCompany, setReviewCompany] = useState<any>(null);
@@ -66,6 +66,13 @@ export default function AdminTabs({
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [replyText, setReplyText] = useState("");
 
+  // State Broadcast
+  const [broadcastMsg, setBroadcastMsg] = useState("");
+  const [broadcastRole, setBroadcastRole] = useState<"ALL" | "BUYER" | "SUPPLIER">("ALL");
+  const [sendingBroadcast, setSendingBroadcast] = useState(false);
+
+  const inputClass = "w-full h-11 rounded-md border border-neutral-300 px-3 text-sm bg-white text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-forest-700 focus:border-transparent dark:bg-neutral-800 dark:border-neutral-700 dark:text-white dark:placeholder:text-neutral-500 dark:focus:ring-lime-400";
+
   useEffect(() => { setLocalSubscriptions(subscriptions); }, [subscriptions]);
   useEffect(() => { setLocalSponsors(sponsors); }, [sponsors]);
   useEffect(() => { setLocalCompanies(companies); }, [companies]);
@@ -87,6 +94,31 @@ export default function AdminTabs({
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
+
+  // --- FUNGSI BROADCAST ---
+  async function handleSendBroadcast(e: React.FormEvent) {
+    e.preventDefault();
+    if (!broadcastMsg.trim()) return toast.error("Pesan tidak boleh kosong.");
+    if (!confirm(`Kirim pesan ini ke semua ${broadcastRole === "ALL" ? "User" : broadcastRole}?`)) return;
+
+    setSendingBroadcast(true);
+    try {
+      const res = await fetch("/api/admin/broadcast", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: broadcastMsg, targetRole: broadcastRole }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Gagal mengirim broadcast");
+      
+      toast.success(`Broadcast berhasil dikirim ke ${data.count} perusahaan!`);
+      setBroadcastMsg("");
+    } catch (err: any) {
+      toast.error(err.message);
+    } finally {
+      setSendingBroadcast(false);
+    }
+  }
 
   // --- FUNGSI PERSETUJUAN LANGGANAN ---
   async function handleSubscriptionAction(id: string, action: "approve" | "reject") {
@@ -262,12 +294,381 @@ export default function AdminTabs({
         <button onClick={() => setActiveTab("banners")} className={`px-4 py-2 text-sm font-medium border-b-2 whitespace-nowrap ${activeTab === "banners" ? "border-forest-700 text-forest-700 dark:border-lime-400 dark:text-lime-400" : "border-transparent text-neutral-500"}`}>Kelola Banner</button>
         <button onClick={() => setActiveTab("reports")} className={`px-4 py-2 text-sm font-medium border-b-2 whitespace-nowrap ${activeTab === "reports" ? "border-forest-700 text-forest-700 dark:border-lime-400 dark:text-lime-400" : "border-transparent text-neutral-500"}`}>Laporan Konsumen ({localReports.length})</button>
         
-        {/* TAB LAPORAN KEUANGAN (YANG SEBELUMNYA HILANG) */}
+        {/* TAB BROADCAST */}
+        <button onClick={() => setActiveTab("broadcast")} className={`px-4 py-2 text-sm font-medium border-b-2 whitespace-nowrap ${activeTab === "broadcast" ? "border-forest-700 text-forest-700 dark:border-lime-400 dark:text-lime-400" : "border-transparent text-neutral-500"}`}>📢 Broadcast</button>
+
+        {/* TAB LAPORAN KEUANGAN */}
         <button onClick={() => setActiveTab("ad_revenue")} className={`px-4 py-2 text-sm font-medium border-b-2 whitespace-nowrap ${activeTab === "ad_revenue" ? "border-forest-700 text-forest-700 dark:border-lime-400 dark:text-lime-400" : "border-transparent text-neutral-500"}`}>📊 Pendapatan Iklan</button>
         <button onClick={() => setActiveTab("sub_revenue")} className={`px-4 py-2 text-sm font-medium border-b-2 whitespace-nowrap ${activeTab === "sub_revenue" ? "border-forest-700 text-forest-700 dark:border-lime-400 dark:text-lime-400" : "border-transparent text-neutral-500"}`}>📈 Pendapatan Langganan</button>
         <button onClick={() => setActiveTab("total_revenue")} className={`px-4 py-2 text-sm font-medium border-b-2 whitespace-nowrap ${activeTab === "total_revenue" ? "border-indigo-600 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400" : "border-transparent text-neutral-500"}`}>💎 Total Penerimaan</button>
         <button onClick={() => setActiveTab("user_growth")} className={`px-4 py-2 text-sm font-medium border-b-2 whitespace-nowrap ${activeTab === "user_growth" ? "border-purple-600 text-purple-600 dark:border-purple-400 dark:text-purple-400" : "border-transparent text-neutral-500"}`}>👥 Pertumbuhan User</button>
       </div>
+
+      {/* ======================================================== */}
+      {/* TAB BROADCAST PESAN */}
+      {/* ======================================================== */}
+      {activeTab === "broadcast" && (
+        <div className="rounded-xl border border-neutral-200 bg-white p-6 shadow-sm dark:border-neutral-800 dark:bg-neutral-900 max-w-2xl">
+          <h3 className="font-bold text-lg mb-2 text-neutral-900 dark:text-white">Kirim Pesan Massal (Broadcast)</h3>
+          <p className="text-sm text-neutral-500 mb-6">Pesan ini akan masuk ke Kotak Masuk (Inbox) pengguna sebagai pesan dari Admin Trade Indo.</p>
+          
+          <form onSubmit={handleSendBroadcast} className="space-y-4">
+            <div>
+              <label className="text-sm font-medium block mb-1 text-neutral-700 dark:text-neutral-300">Target Penerima</label>
+              <select 
+                value={broadcastRole} 
+                onChange={e => setBroadcastRole(e.target.value as any)}
+                className={inputClass}
+              >
+                <option value="ALL">Semua Pengguna (Buyer & Supplier)</option>
+                <option value="BUYER">Hanya Buyer</option>
+                <option value="SUPPLIER">Hanya Supplier</option>
+              </select>
+            </div>
+            
+            <div>
+              <label className="text-sm font-medium block mb-1 text-neutral-700 dark:text-neutral-300">Isi Pesan</label>
+              <textarea 
+                rows={5}
+                value={broadcastMsg}
+                onChange={e => setBroadcastMsg(e.target.value)}
+                placeholder="Tulis pengumuman atau informasi penting di sini..."
+                className={`${inputClass} h-auto py-3`}
+                required
+              />
+            </div>
+
+            <Button type="submit" disabled={sendingBroadcast || !broadcastMsg.trim()} className="w-full h-11">
+              {sendingBroadcast ? "Mengirim..." : "Kirim Broadcast"}
+            </Button>
+          </form>
+        </div>
+      )}
+
+      {/* (SISA TAB LAINNYA TETAP SAMA SEPERTI SEBELUMNYA) */}
+      {activeTab === "subscriptions" && (
+        <div className="overflow-x-auto rounded-md border border-neutral-200 dark:border-neutral-800">
+          <table className="w-full text-sm text-left">
+            <thead className="bg-neutral-100 dark:bg-neutral-800">
+              <tr><th className="p-3">Perusahaan</th><th className="p-3">Paket</th><th className="p-3">Tanggal</th><th className="p-3">Bukti</th><th className="p-3">Aksi</th></tr>
+            </thead>
+            <tbody>
+              {localSubscriptions.map((req) => (
+                <tr key={req.id} className="border-t border-neutral-200 dark:border-neutral-800">
+                  <td className="p-3 font-medium">{req.company.name}</td>
+                  <td className="p-3"><span className="bg-forest-700 text-white px-2 py-0.5 text-xs rounded-sm">{req.requestedPlan}</span></td>
+                  <td className="p-3">{new Date(req.createdAt).toLocaleDateString("id-ID")}</td>
+                  <td className="p-3">{req.paymentProofUrl ? <a href={req.paymentProofUrl} target="_blank" className="text-blue-600 underline text-xs">Lihat</a> : "-"}</td>
+                  <td className="p-3 flex gap-2">
+                    <button onClick={() => handleSubscriptionAction(req.id, "approve")} className="bg-forest-700 px-3 py-1 text-white text-xs rounded hover:bg-forest-500">Setujui</button>
+                    <button onClick={() => handleSubscriptionAction(req.id, "reject")} className="border border-red-500 text-red-500 px-3 py-1 text-xs rounded hover:bg-red-50">Tolak</button>
+                  </td>
+                </tr>
+              ))}
+              {localSubscriptions.length === 0 && <tr><td colSpan={5} className="p-4 text-center text-neutral-500">Tidak ada pengajuan.</td></tr>}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {activeTab === "companies" && (
+        <div className="overflow-x-auto rounded-md border border-neutral-200 dark:border-neutral-800">
+          <table className="w-full text-sm text-left">
+            <thead className="bg-neutral-100 dark:bg-neutral-800">
+              <tr><th className="p-3">Nama Perusahaan</th><th className="p-3">Tipe</th><th className="p-3">Status</th><th className="p-3 text-right">Aksi</th></tr>
+            </thead>
+            <tbody>
+              {localCompanies.map((c) => (
+                <tr key={c.id} className="border-t border-neutral-200 dark:border-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-900/50">
+                  <td className="p-3 font-medium">{c.name}</td>
+                  <td className="p-3">{c.type}</td>
+                  <td className="p-3"><span className={`px-2 py-0.5 text-xs rounded-full ${c.verificationStatus === "VERIFIED" ? "bg-green-100 text-green-800" : c.verificationStatus === "PENDING" ? "bg-amber-100 text-amber-800" : "bg-red-100 text-red-800"}`}>{c.verificationStatus}</span></td>
+                  <td className="p-3 text-right">
+                    {c.verificationStatus === "PENDING" ? (<button onClick={() => setReviewCompany(c)} className="bg-forest-700 text-white px-4 py-1.5 rounded-md text-xs font-bold hover:bg-forest-500 transition-colors shadow-sm">🔍 Periksa Dokumen</button>) : c.verificationStatus === "VERIFIED" ? (<span className="text-green-600 text-xs font-medium">✓ Terverifikasi</span>) : (<span className="text-red-500 text-xs font-medium">Ditolak</span>)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {activeTab === "sponsors" && (
+        <div className="overflow-x-auto rounded-md border border-neutral-200 dark:border-neutral-800">
+          <table className="w-full text-sm text-left">
+            <thead className="bg-neutral-100 dark:bg-neutral-800">
+              <tr><th className="p-3">Perusahaan</th><th className="p-3">Produk</th><th className="p-3">Durasi</th><th className="p-3">Total</th><th className="p-3">Bukti</th><th className="p-3">Aksi</th></tr>
+            </thead>
+            <tbody>
+              {localSponsors.map((req: any) => {
+                const imgUrl = req.product?.images?.[0]?.url;
+                return (
+                  <tr key={req.id} className="border-t border-neutral-200 dark:border-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-900/50">
+                    <td className="p-3 font-medium">{req.company?.name ?? "-"}</td>
+                    <td className="p-3">
+                      <div className="flex items-center gap-3">
+                        <div className="h-12 w-12 shrink-0 rounded-md border border-neutral-200 bg-neutral-100 overflow-hidden relative group cursor-pointer" onClick={() => imgUrl && setSelectedDocImage(imgUrl)}>
+                          {imgUrl ? (<><img src={imgUrl} alt={req.product.titleId} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-110" /><div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity"><svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" /></svg></div></>) : (<div className="h-full w-full flex items-center justify-center text-[10px] text-neutral-400">No Img</div>)}
+                        </div>
+                        <span className="line-clamp-2">{req.product?.titleId ?? "-"}</span>
+                      </div>
+                    </td>
+                    <td className="p-3">{req.durationDays} Hari</td>
+                    <td className="p-3 tabular-nums">Rp {req.price.toLocaleString("id-ID")}</td>
+                    <td className="p-3">{req.paymentProofUrl ? <a href={req.paymentProofUrl} target="_blank" className="text-blue-600 underline text-xs">Lihat</a> : "-"}</td>
+                    <td className="p-3">
+                      <div className="flex flex-col gap-2">
+                        <button onClick={() => handleSponsorAction(req.id, "approve")} className="bg-forest-700 px-3 py-1.5 text-white text-xs rounded hover:bg-forest-500 whitespace-nowrap font-bold">✓ Setujui</button>
+                        <details className="relative">
+                          <summary className="cursor-pointer border border-red-500 text-red-500 px-3 py-1.5 text-xs rounded list-none hover:bg-red-50 text-center whitespace-nowrap">✕ Tolak</summary>
+                          <div className="mt-2 space-y-1 bg-white p-2 border rounded absolute right-0 z-20 shadow-lg w-48">
+                            <select id={`reason-${req.id}`} className="text-xs border rounded px-2 py-1 w-full">
+                              <option value="">— Pilih alasan —</option>
+                              <option value="Nominal tidak sesuai">Nominal tidak sesuai</option>
+                              <option value="Bukti tidak jelas">Bukti tidak jelas</option>
+                              <option value="Bukti duplikat">Bukti duplikat</option>
+                              <option value="Produk melanggar ToS">Produk melanggar ToS</option>
+                            </select>
+                            <button onClick={() => {
+                              const sel = document.getElementById(`reason-${req.id}`) as HTMLSelectElement;
+                              handleSponsorAction(req.id, "reject", sel.value);
+                            }} className="bg-red-500 text-white text-xs rounded px-2 py-1 w-full hover:bg-red-600">Konfirmasi Tolak</button>
+                          </div>
+                        </details>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+              {localSponsors.length === 0 && (<tr><td colSpan={6} className="p-4 text-center text-neutral-500">Tidak ada pengajuan iklan.</td></tr>)}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {activeTab === "pending_banners" && (
+        <div className="overflow-x-auto rounded-md border border-neutral-200 dark:border-neutral-800">
+          <div className="bg-blue-50 text-blue-800 p-4 text-sm dark:bg-blue-900/30 dark:text-blue-300 border-b dark:border-neutral-800">
+            <strong>Instruksi Admin:</strong> 
+            <ol className="list-decimal pl-5 mt-1 space-y-1">
+              <li>Klik <strong>Download Gambar</strong> untuk menyimpan banner mentah dari customer.</li>
+              <li>Buka tab <strong>Kelola Banner</strong>, unggah gambar dan gunakan fitur potong (Crop 16:9).</li>
+              <li>Setelah banner baru tayang, kembali ke sini dan klik tombol <strong>Selesai & Hapus</strong>.</li>
+            </ol>
+          </div>
+          <table className="w-full text-sm text-left">
+            <thead className="bg-neutral-100 dark:bg-neutral-800">
+              <tr><th className="p-3">Perusahaan</th><th className="p-3">Gambar Banner (Mentah)</th><th className="p-3">Bukti TF</th><th className="p-3">Durasi & Harga</th><th className="p-3">Aksi</th></tr>
+            </thead>
+            <tbody>
+              {localPendingBanners.map((b) => (
+                <tr key={b.id} className="border-t border-neutral-200 dark:border-neutral-800">
+                  <td className="p-3 font-medium">{b.company?.name || "-"}</td>
+                  <td className="p-3">
+                    <div className="flex flex-col gap-2">
+                      <img src={b.imageUrl} alt="Banner" className="h-16 w-32 object-cover rounded border cursor-pointer" onClick={() => setSelectedDocImage(b.imageUrl)} />
+                      <a href={b.imageUrl} download={`Banner-${b.company?.name || "Customer"}.jpg`} target="_blank" rel="noopener noreferrer" className="text-xs font-bold text-forest-700 hover:underline flex items-center gap-1 w-fit bg-forest-50 px-2 py-1 rounded border border-forest-200">⬇️ Download Gambar</a>
+                    </div>
+                  </td>
+                  <td className="p-3"><a href={b.paymentProofUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline text-xs">Lihat Bukti</a></td>
+                  <td className="p-3"><div className="font-bold">{b.durationDays} Hari</div><div className="text-xs text-forest-700">Rp {b.price?.toLocaleString("id-ID")}</div></td>
+                  <td className="p-3 flex flex-col gap-2">
+                    <button onClick={() => handleFinishBanner(b.id)} className="bg-forest-700 text-white px-3 py-1.5 rounded text-xs hover:bg-forest-500 whitespace-nowrap font-bold">✓ Selesai & Hapus</button>
+                    <button onClick={() => handleRejectBanner(b.id)} className="border border-red-500 text-red-500 px-3 py-1 rounded text-xs hover:bg-red-50 whitespace-nowrap">✕ Tolak</button>
+                  </td>
+                </tr>
+              ))}
+              {localPendingBanners.length === 0 && <tr><td colSpan={5} className="p-4 text-center text-neutral-500">Tidak ada pengajuan iklan banner.</td></tr>}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {activeTab === "users" && (
+        <div className="overflow-x-auto rounded-md border border-neutral-200 dark:border-neutral-800">
+          <table className="w-full text-sm text-left">
+            <thead className="bg-neutral-100 dark:bg-neutral-800">
+              <tr><th className="p-3">Nama User</th><th className="p-3">Email</th><th className="p-3">Role</th><th className="p-3">Status</th><th className="p-3">Aksi</th></tr>
+            </thead>
+            <tbody>
+              {localUsers.map((u) => (
+                <tr key={u.id} className="border-t border-neutral-200 dark:border-neutral-800">
+                  <td className="p-3 font-medium">{u.name || "-"}</td>
+                  <td className="p-3">{u.email}</td>
+                  <td className="p-3"><span className={`px-2 py-0.5 text-xs font-bold rounded-full ${u.role === "SUPPLIER" ? "bg-blue-100 text-blue-700" : "bg-purple-100 text-purple-700"}`}>{u.role}</span></td>
+                  <td className="p-3"><span className={`px-2 py-0.5 text-xs font-bold rounded-full ${u.status === "ACTIVE" ? "bg-green-100 text-green-800" : u.status === "SUSPENDED" ? "bg-amber-100 text-amber-800" : "bg-red-100 text-red-800"}`}>{u.status}</span></td>
+                  <td className="p-3">
+                    <button onClick={() => { setActionUser(u); setActionType(u.status === "ACTIVE" ? "SUSPENDED" : "ACTIVE"); setSuspendReason(""); }} className="text-forest-700 hover:underline dark:text-lime-400 font-medium text-xs whitespace-nowrap">Ubah Status</button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {activeTab === "banners" && (
+        <div className="grid gap-6 md:grid-cols-[1fr_2fr]">
+          <div className="rounded-md border border-neutral-200 bg-white p-5 dark:border-neutral-800 dark:bg-neutral-900 h-fit">
+            <h3 className="font-bold text-lg mb-4">{editBannerId ? "Edit Banner" : "Tambah Banner Manual"}</h3>
+            <form onSubmit={handleSubmitBanner} className="space-y-4">
+              <div>
+                <label className="text-sm font-medium block mb-1">Gambar (16:9)</label>
+                {bannerPreview ? (
+                  <div className="relative aspect-video rounded-lg overflow-hidden border mb-2 group bg-black/5">
+                    <img src={bannerPreview} alt="Preview" className="w-full h-full object-cover" />
+                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center gap-2 transition-opacity duration-200">
+                      <button type="button" onClick={() => { setImageSrc(bannerPreview); setIsCropping(true); }} className="bg-forest-700 hover:bg-forest-500 text-white px-3 py-1.5 rounded-md text-xs font-bold shadow-md transition-colors">✂️ Sesuaikan Posisi</button>
+                      <button type="button" onClick={() => { setBannerFile(null); setBannerPreview(null); }} className="bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-md text-xs font-bold shadow-md transition-colors">🗑️ Hapus Gambar</button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="relative">
+                    <input type="file" accept="image/*" onChange={handleBannerFileChange} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
+                    <div className="flex flex-col items-center justify-center h-24 border-2 border-dashed rounded-lg bg-neutral-50 hover:bg-neutral-100 dark:bg-neutral-800 dark:border-neutral-700 transition-colors">
+                      <span className="text-2xl mb-1">🖼️</span>
+                      <span className="text-xs font-medium text-neutral-500">Klik pilih gambar (Lalu Crop)</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+              <div><label className="text-sm font-medium block mb-1">Judul (Opsional)</label><input value={bannerTitle} onChange={e => setBannerTitle(e.target.value)} className={inputClass} /></div>
+              <div><label className="text-sm font-medium block mb-1">Link (Opsional)</label><input value={bannerLink} onChange={e => setBannerLink(e.target.value)} className={inputClass} /></div>
+              <div><label className="text-sm font-medium block mb-1">Durasi (Hari)</label><input type="number" min={1} value={bannerDuration} onChange={e => setBannerDuration(Number(e.target.value))} className={inputClass} /><p className="text-xs text-neutral-500 mt-1">Banner otomatis berhenti tayang setelah durasi habis.</p></div>
+              <div><label className="text-sm font-medium block mb-1">Urutan Tampil</label><input type="number" value={bannerOrder} onChange={e => setBannerOrder(Number(e.target.value))} className={inputClass} /></div>
+              <div className="flex gap-2 pt-2">
+                {editBannerId && <button type="button" onClick={resetFormBanner} className="flex-1 bg-neutral-200 text-neutral-700 h-10 rounded-md font-medium text-sm hover:bg-neutral-300">Batal</button>}
+                <button type="submit" disabled={uploadingBanner || (!editBannerId && !bannerFile)} className="flex-1 bg-forest-700 text-white h-10 rounded-md font-medium text-sm hover:bg-forest-500 disabled:opacity-50">{uploadingBanner ? "Menyimpan..." : (editBannerId ? "Update" : "Simpan")}</button>
+              </div>
+            </form>
+          </div>
+          <div className="rounded-md border border-neutral-200 bg-white p-5 dark:border-neutral-800 dark:bg-neutral-900">
+            <h3 className="font-bold text-lg mb-4">Daftar Banner Carousel</h3>
+            {loadingBanners ? <p className="text-sm text-neutral-500">Memuat...</p> : banners.length === 0 ? <p className="text-sm text-neutral-500">Belum ada banner.</p> : (
+              <div className="space-y-3">
+                {banners.filter(b => b.type === "CAROUSEL" && b.status === "APPROVED").map(b => (
+                  <div key={b.id} className="flex gap-4 p-3 border border-neutral-200 dark:border-neutral-800 rounded-lg items-center hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition-colors">
+                    <div className="h-16 w-28 shrink-0 rounded overflow-hidden border bg-neutral-100"><img src={b.imageUrl} alt="Banner" className="w-full h-full object-cover" /></div>
+                    <div className="flex-1"><p className="font-bold text-sm">{b.title || "-"}</p><p className="text-xs text-neutral-500">Urutan: {b.order}</p>{b.endDate && <p className="text-xs text-red-500">Berakhir: {new Date(b.endDate).toLocaleDateString("id-ID")}</p>}</div>
+                    <div className="flex gap-1">
+                      <button onClick={() => handleEditClick(b)} className="text-amber-500 hover:bg-amber-50 p-2 rounded-md transition-colors" title="Edit"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg></button>
+                      <button onClick={() => handleDeleteBanner(b.id)} className="text-red-500 hover:bg-red-50 p-2 rounded-md transition-colors" title="Hapus"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {activeTab === "reports" && (
+        <div className="overflow-x-auto rounded-md border border-neutral-200 dark:border-neutral-800">
+          <table className="w-full text-sm text-left">
+            <thead className="bg-neutral-100 dark:bg-neutral-800">
+              <tr>
+                <th className="p-3">Tanggal</th>
+                <th className="p-3">Nama / Email</th>
+                <th className="p-3">Kategori</th>
+                <th className="p-3">Subjek</th>
+                <th className="p-3">Pesan</th>
+                <th className="p-3">Status</th>
+                <th className="p-3">Aksi</th>
+              </tr>
+            </thead>
+            <tbody>
+              {localReports.map((r) => (
+                <tr key={r.id} className="border-t border-neutral-200 dark:border-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-900/50">
+                  <td className="p-3 whitespace-nowrap">{new Date(r.createdAt).toLocaleDateString("id-ID")}</td>
+                  <td className="p-3">
+                    <div className="font-medium">{r.name}</div>
+                    <div className="text-xs text-neutral-500">{r.email}</div>
+                  </td>
+                  <td className="p-3">
+                    <span className={`px-2 py-0.5 text-xs rounded-full font-medium ${r.category === "PELANGGARAN" ? "bg-red-100 text-red-800" : "bg-blue-100 text-blue-800"}`}>
+                      {r.category}
+                    </span>
+                  </td>
+                  <td className="p-3 font-medium">{r.subject}</td>
+                  <td className="p-3">
+                    <div className="max-w-[250px] whitespace-normal line-clamp-3 hover:line-clamp-none cursor-pointer text-xs" title={r.message}>
+                      {r.message}
+                    </div>
+                  </td>
+                  <td className="p-3">
+                    <span className={`px-2 py-0.5 text-xs font-bold rounded-full ${
+                      r.status === "PENDING" ? "bg-amber-100 text-amber-800" : 
+                      r.status === "RESOLVED" ? "bg-green-100 text-green-800" : 
+                      "bg-neutral-200 text-neutral-700"
+                    }`}>
+                      {r.status}
+                    </span>
+                  </td>
+                  <td className="p-3">
+                    <div className="flex flex-col gap-2">
+                      {r.status === "PENDING" ? (
+                        <>
+                          {replyingTo === r.id && (
+                            <textarea 
+                              value={replyText}
+                              onChange={(e) => setReplyText(e.target.value)}
+                              placeholder="Ketik balasan..."
+                              className="w-full text-xs p-2 border rounded-md min-h-[60px] bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white"
+                            />
+                          )}
+                          <div className="flex gap-2">
+                            <button 
+                              onClick={() => handleUpdateReportStatus(r.id, "RESOLVED")}
+                              disabled={updatingReportId === r.id}
+                              className="bg-forest-700 hover:bg-forest-500 text-white px-2.5 py-1 rounded text-xs disabled:opacity-50 whitespace-nowrap"
+                            >
+                              {replyingTo === r.id ? "Kirim & Selesai" : "✓ Selesai"}
+                            </button>
+                            
+                            {replyingTo === r.id ? (
+                              <button 
+                                onClick={() => setReplyingTo(null)}
+                                className="border border-neutral-300 text-neutral-600 hover:bg-neutral-100 px-2.5 py-1 rounded text-xs"
+                              >
+                                Batal
+                              </button>
+                            ) : (
+                              <button 
+                                onClick={() => handleUpdateReportStatus(r.id, "REJECTED")}
+                                disabled={updatingReportId === r.id}
+                                className="border border-neutral-300 text-neutral-600 hover:bg-neutral-100 px-2.5 py-1 rounded text-xs disabled:opacity-50 whitespace-nowrap"
+                              >
+                                ✕ Tolak
+                              </button>
+                            )}
+                          </div>
+                        </>
+                      ) : (
+                        <div className="flex flex-col gap-1 mb-2">
+                          <span className="text-xs text-neutral-400 italic">Sudah ditangani</span>
+                          {r.adminReply && (
+                            <span className="text-[10px] text-forest-700 bg-forest-50 p-1 rounded">Balasan: {r.adminReply}</span>
+                          )}
+                        </div>
+                      )}
+                      
+                      <button
+                        onClick={() => handleDeleteReport(r.id)}
+                        className="text-xs text-red-600 border border-red-200 bg-red-50 hover:bg-red-100 px-2.5 py-1 rounded whitespace-nowrap w-fit transition-colors"
+                      >
+                        🗑️ Hapus
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+              {localReports.length === 0 && (
+                <tr><td colSpan={7} className="p-4 text-center text-neutral-500">Belum ada laporan masuk.</td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      )}
 
       {/* ======================================================== */}
       {/* 1. TAB: PENDAPATAN IKLAN */}
@@ -470,339 +871,6 @@ export default function AdminTabs({
       )}
 
       {/* ======================================================== */}
-      {/* TAB 1: LANGGANAN */}
-      {/* ======================================================== */}
-      {activeTab === "subscriptions" && (
-        <div className="overflow-x-auto rounded-md border border-neutral-200 dark:border-neutral-800">
-          <table className="w-full text-sm text-left">
-            <thead className="bg-neutral-100 dark:bg-neutral-800">
-              <tr><th className="p-3">Perusahaan</th><th className="p-3">Paket</th><th className="p-3">Tanggal</th><th className="p-3">Bukti</th><th className="p-3">Aksi</th></tr>
-            </thead>
-            <tbody>
-              {localSubscriptions.map((req) => (
-                <tr key={req.id} className="border-t border-neutral-200 dark:border-neutral-800">
-                  <td className="p-3 font-medium">{req.company.name}</td>
-                  <td className="p-3"><span className="bg-forest-700 text-white px-2 py-0.5 text-xs rounded-sm">{req.requestedPlan}</span></td>
-                  <td className="p-3">{new Date(req.createdAt).toLocaleDateString("id-ID")}</td>
-                  <td className="p-3">{req.paymentProofUrl ? <a href={req.paymentProofUrl} target="_blank" className="text-blue-600 underline text-xs">Lihat</a> : "-"}</td>
-                  <td className="p-3 flex gap-2">
-                    <button onClick={() => handleSubscriptionAction(req.id, "approve")} className="bg-forest-700 px-3 py-1 text-white text-xs rounded hover:bg-forest-500">Setujui</button>
-                    <button onClick={() => handleSubscriptionAction(req.id, "reject")} className="border border-red-500 text-red-500 px-3 py-1 text-xs rounded hover:bg-red-50">Tolak</button>
-                  </td>
-                </tr>
-              ))}
-              {localSubscriptions.length === 0 && <tr><td colSpan={5} className="p-4 text-center text-neutral-500">Tidak ada pengajuan.</td></tr>}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      {/* TAB 2: VERIFIKASI PT */}
-      {activeTab === "companies" && (
-        <div className="overflow-x-auto rounded-md border border-neutral-200 dark:border-neutral-800">
-          <table className="w-full text-sm text-left">
-            <thead className="bg-neutral-100 dark:bg-neutral-800">
-              <tr><th className="p-3">Nama Perusahaan</th><th className="p-3">Tipe</th><th className="p-3">Status</th><th className="p-3 text-right">Aksi</th></tr>
-            </thead>
-            <tbody>
-              {localCompanies.map((c) => (
-                <tr key={c.id} className="border-t border-neutral-200 dark:border-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-900/50">
-                  <td className="p-3 font-medium">{c.name}</td>
-                  <td className="p-3">{c.type}</td>
-                  <td className="p-3"><span className={`px-2 py-0.5 text-xs rounded-full ${c.verificationStatus === "VERIFIED" ? "bg-green-100 text-green-800" : c.verificationStatus === "PENDING" ? "bg-amber-100 text-amber-800" : "bg-red-100 text-red-800"}`}>{c.verificationStatus}</span></td>
-                  <td className="p-3 text-right">
-                    {c.verificationStatus === "PENDING" ? (<button onClick={() => setReviewCompany(c)} className="bg-forest-700 text-white px-4 py-1.5 rounded-md text-xs font-bold hover:bg-forest-500 transition-colors shadow-sm">🔍 Periksa Dokumen</button>) : c.verificationStatus === "VERIFIED" ? (<span className="text-green-600 text-xs font-medium">✓ Terverifikasi</span>) : (<span className="text-red-500 text-xs font-medium">Ditolak</span>)}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      {/* TAB 3: IKLAN PRODUK */}
-      {activeTab === "sponsors" && (
-        <div className="overflow-x-auto rounded-md border border-neutral-200 dark:border-neutral-800">
-          <table className="w-full text-sm text-left">
-            <thead className="bg-neutral-100 dark:bg-neutral-800">
-              <tr><th className="p-3">Perusahaan</th><th className="p-3">Produk</th><th className="p-3">Durasi</th><th className="p-3">Total</th><th className="p-3">Bukti</th><th className="p-3">Aksi</th></tr>
-            </thead>
-            <tbody>
-              {localSponsors.map((req: any) => {
-                const imgUrl = req.product?.images?.[0]?.url;
-                return (
-                  <tr key={req.id} className="border-t border-neutral-200 dark:border-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-900/50">
-                    <td className="p-3 font-medium">{req.company?.name ?? "-"}</td>
-                    <td className="p-3">
-                      <div className="flex items-center gap-3">
-                        <div className="h-12 w-12 shrink-0 rounded-md border border-neutral-200 bg-neutral-100 overflow-hidden relative group cursor-pointer" onClick={() => imgUrl && setSelectedDocImage(imgUrl)}>
-                          {imgUrl ? (<><img src={imgUrl} alt={req.product.titleId} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-110" /><div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity"><svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" /></svg></div></>) : (<div className="h-full w-full flex items-center justify-center text-[10px] text-neutral-400">No Img</div>)}
-                        </div>
-                        <span className="line-clamp-2">{req.product?.titleId ?? "-"}</span>
-                      </div>
-                    </td>
-                    <td className="p-3">{req.durationDays} Hari</td>
-                    <td className="p-3 tabular-nums">Rp {req.price.toLocaleString("id-ID")}</td>
-                    <td className="p-3">{req.paymentProofUrl ? <a href={req.paymentProofUrl} target="_blank" className="text-blue-600 underline text-xs">Lihat</a> : "-"}</td>
-                    <td className="p-3">
-                      <div className="flex flex-col gap-2">
-                        <button onClick={() => handleSponsorAction(req.id, "approve")} className="bg-forest-700 px-3 py-1.5 text-white text-xs rounded hover:bg-forest-500 whitespace-nowrap font-bold">✓ Setujui</button>
-                        <details className="relative">
-                          <summary className="cursor-pointer border border-red-500 text-red-500 px-3 py-1.5 text-xs rounded list-none hover:bg-red-50 text-center whitespace-nowrap">✕ Tolak</summary>
-                          <div className="mt-2 space-y-1 bg-white p-2 border rounded absolute right-0 z-20 shadow-lg w-48">
-                            <select id={`reason-${req.id}`} className="text-xs border rounded px-2 py-1 w-full">
-                              <option value="">— Pilih alasan —</option>
-                              <option value="Nominal tidak sesuai">Nominal tidak sesuai</option>
-                              <option value="Bukti tidak jelas">Bukti tidak jelas</option>
-                              <option value="Bukti duplikat">Bukti duplikat</option>
-                              <option value="Produk melanggar ToS">Produk melanggar ToS</option>
-                            </select>
-                            <button onClick={() => {
-                              const sel = document.getElementById(`reason-${req.id}`) as HTMLSelectElement;
-                              handleSponsorAction(req.id, "reject", sel.value);
-                            }} className="bg-red-500 text-white text-xs rounded px-2 py-1 w-full hover:bg-red-600">Konfirmasi Tolak</button>
-                          </div>
-                        </details>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-              {localSponsors.length === 0 && (<tr><td colSpan={6} className="p-4 text-center text-neutral-500">Tidak ada pengajuan iklan.</td></tr>)}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      {/* TAB 4: PERSETUJUAN IKLAN BANNER */}
-      {activeTab === "pending_banners" && (
-        <div className="overflow-x-auto rounded-md border border-neutral-200 dark:border-neutral-800">
-          <div className="bg-blue-50 text-blue-800 p-4 text-sm dark:bg-blue-900/30 dark:text-blue-300 border-b dark:border-neutral-800">
-            <strong>Instruksi Admin:</strong> 
-            <ol className="list-decimal pl-5 mt-1 space-y-1">
-              <li>Klik <strong>Download Gambar</strong> untuk menyimpan banner mentah dari customer.</li>
-              <li>Buka tab <strong>Kelola Banner</strong>, unggah gambar dan gunakan fitur potong (Crop 16:9).</li>
-              <li>Setelah banner baru tayang, kembali ke sini dan klik tombol <strong>Selesai & Hapus</strong>.</li>
-            </ol>
-          </div>
-          <table className="w-full text-sm text-left">
-            <thead className="bg-neutral-100 dark:bg-neutral-800">
-              <tr><th className="p-3">Perusahaan</th><th className="p-3">Gambar Banner (Mentah)</th><th className="p-3">Bukti TF</th><th className="p-3">Durasi & Harga</th><th className="p-3">Aksi</th></tr>
-            </thead>
-            <tbody>
-              {localPendingBanners.map((b) => (
-                <tr key={b.id} className="border-t border-neutral-200 dark:border-neutral-800">
-                  <td className="p-3 font-medium">{b.company?.name || "-"}</td>
-                  <td className="p-3">
-                    <div className="flex flex-col gap-2">
-                      <img src={b.imageUrl} alt="Banner" className="h-16 w-32 object-cover rounded border cursor-pointer" onClick={() => setSelectedDocImage(b.imageUrl)} />
-                      <a href={b.imageUrl} download={`Banner-${b.company?.name || "Customer"}.jpg`} target="_blank" rel="noopener noreferrer" className="text-xs font-bold text-forest-700 hover:underline flex items-center gap-1 w-fit bg-forest-50 px-2 py-1 rounded border border-forest-200">⬇️ Download Gambar</a>
-                    </div>
-                  </td>
-                  <td className="p-3"><a href={b.paymentProofUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline text-xs">Lihat Bukti</a></td>
-                  <td className="p-3"><div className="font-bold">{b.durationDays} Hari</div><div className="text-xs text-forest-700">Rp {b.price?.toLocaleString("id-ID")}</div></td>
-                  <td className="p-3 flex flex-col gap-2">
-                    <button onClick={() => handleFinishBanner(b.id)} className="bg-forest-700 text-white px-3 py-1.5 rounded text-xs hover:bg-forest-500 whitespace-nowrap font-bold">✓ Selesai & Hapus</button>
-                    <button onClick={() => handleRejectBanner(b.id)} className="border border-red-500 text-red-500 px-3 py-1 rounded text-xs hover:bg-red-50 whitespace-nowrap">✕ Tolak</button>
-                  </td>
-                </tr>
-              ))}
-              {localPendingBanners.length === 0 && <tr><td colSpan={5} className="p-4 text-center text-neutral-500">Tidak ada pengajuan iklan banner.</td></tr>}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      {/* TAB 5: KELOLA AKUN */}
-      {activeTab === "users" && (
-        <div className="overflow-x-auto rounded-md border border-neutral-200 dark:border-neutral-800">
-          <table className="w-full text-sm text-left">
-            <thead className="bg-neutral-100 dark:bg-neutral-800">
-              <tr><th className="p-3">Nama User</th><th className="p-3">Email</th><th className="p-3">Role</th><th className="p-3">Status</th><th className="p-3">Aksi</th></tr>
-            </thead>
-            <tbody>
-              {localUsers.map((u) => (
-                <tr key={u.id} className="border-t border-neutral-200 dark:border-neutral-800">
-                  <td className="p-3 font-medium">{u.name || "-"}</td>
-                  <td className="p-3">{u.email}</td>
-                  <td className="p-3"><span className={`px-2 py-0.5 text-xs font-bold rounded-full ${u.role === "SUPPLIER" ? "bg-blue-100 text-blue-700" : "bg-purple-100 text-purple-700"}`}>{u.role}</span></td>
-                  <td className="p-3"><span className={`px-2 py-0.5 text-xs font-bold rounded-full ${u.status === "ACTIVE" ? "bg-green-100 text-green-800" : u.status === "SUSPENDED" ? "bg-amber-100 text-amber-800" : "bg-red-100 text-red-800"}`}>{u.status}</span></td>
-                  <td className="p-3">
-                    <button onClick={() => { setActionUser(u); setActionType(u.status === "ACTIVE" ? "SUSPENDED" : "ACTIVE"); setSuspendReason(""); }} className="text-forest-700 hover:underline dark:text-lime-400 font-medium text-xs whitespace-nowrap">Ubah Status</button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      {/* TAB 6: KELOLA BANNER ADMIN */}
-      {activeTab === "banners" && (
-        <div className="grid gap-6 md:grid-cols-[1fr_2fr]">
-          <div className="rounded-md border border-neutral-200 bg-white p-5 dark:border-neutral-800 dark:bg-neutral-900 h-fit">
-            <h3 className="font-bold text-lg mb-4">{editBannerId ? "Edit Banner" : "Tambah Banner Manual"}</h3>
-            <form onSubmit={handleSubmitBanner} className="space-y-4">
-              <div>
-                <label className="text-sm font-medium block mb-1">Gambar (16:9)</label>
-                {bannerPreview ? (
-                  <div className="relative aspect-video rounded-lg overflow-hidden border mb-2 group bg-black/5">
-                    <img src={bannerPreview} alt="Preview" className="w-full h-full object-cover" />
-                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center gap-2 transition-opacity duration-200">
-                      <button type="button" onClick={() => { setImageSrc(bannerPreview); setIsCropping(true); }} className="bg-forest-700 hover:bg-forest-500 text-white px-3 py-1.5 rounded-md text-xs font-bold shadow-md transition-colors">✂️ Sesuaikan Posisi</button>
-                      <button type="button" onClick={() => { setBannerFile(null); setBannerPreview(null); }} className="bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-md text-xs font-bold shadow-md transition-colors">🗑️ Hapus Gambar</button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="relative">
-                    <input type="file" accept="image/*" onChange={handleBannerFileChange} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
-                    <div className="flex flex-col items-center justify-center h-24 border-2 border-dashed rounded-lg bg-neutral-50 hover:bg-neutral-100 dark:bg-neutral-800 dark:border-neutral-700 transition-colors">
-                      <span className="text-2xl mb-1">🖼️</span>
-                      <span className="text-xs font-medium text-neutral-500">Klik pilih gambar (Lalu Crop)</span>
-                    </div>
-                  </div>
-                )}
-              </div>
-              <div><label className="text-sm font-medium block mb-1">Judul (Opsional)</label><input value={bannerTitle} onChange={e => setBannerTitle(e.target.value)} className="w-full h-10 rounded-md border px-3 text-sm dark:bg-neutral-800 dark:border-neutral-700" /></div>
-              <div><label className="text-sm font-medium block mb-1">Link (Opsional)</label><input value={bannerLink} onChange={e => setBannerLink(e.target.value)} className="w-full h-10 rounded-md border px-3 text-sm dark:bg-neutral-800 dark:border-neutral-700" /></div>
-              <div><label className="text-sm font-medium block mb-1">Durasi (Hari)</label><input type="number" min={1} value={bannerDuration} onChange={e => setBannerDuration(Number(e.target.value))} className="w-full h-10 rounded-md border px-3 text-sm dark:bg-neutral-800 dark:border-neutral-700" /><p className="text-xs text-neutral-500 mt-1">Banner otomatis berhenti tayang setelah durasi habis.</p></div>
-              <div><label className="text-sm font-medium block mb-1">Urutan Tampil</label><input type="number" value={bannerOrder} onChange={e => setBannerOrder(Number(e.target.value))} className="w-full h-10 rounded-md border px-3 text-sm dark:bg-neutral-800 dark:border-neutral-700" /></div>
-              <div className="flex gap-2 pt-2">
-                {editBannerId && <button type="button" onClick={resetFormBanner} className="flex-1 bg-neutral-200 text-neutral-700 h-10 rounded-md font-medium text-sm hover:bg-neutral-300">Batal</button>}
-                <button type="submit" disabled={uploadingBanner || (!editBannerId && !bannerFile)} className="flex-1 bg-forest-700 text-white h-10 rounded-md font-medium text-sm hover:bg-forest-500 disabled:opacity-50">{uploadingBanner ? "Menyimpan..." : (editBannerId ? "Update" : "Simpan")}</button>
-              </div>
-            </form>
-          </div>
-          <div className="rounded-md border border-neutral-200 bg-white p-5 dark:border-neutral-800 dark:bg-neutral-900">
-            <h3 className="font-bold text-lg mb-4">Daftar Banner Carousel</h3>
-            {loadingBanners ? <p className="text-sm text-neutral-500">Memuat...</p> : banners.length === 0 ? <p className="text-sm text-neutral-500">Belum ada banner.</p> : (
-              <div className="space-y-3">
-                {banners.filter(b => b.type === "CAROUSEL" && b.status === "APPROVED").map(b => (
-                  <div key={b.id} className="flex gap-4 p-3 border border-neutral-200 dark:border-neutral-800 rounded-lg items-center hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition-colors">
-                    <div className="h-16 w-28 shrink-0 rounded overflow-hidden border bg-neutral-100"><img src={b.imageUrl} alt="Banner" className="w-full h-full object-cover" /></div>
-                    <div className="flex-1"><p className="font-bold text-sm">{b.title || "-"}</p><p className="text-xs text-neutral-500">Urutan: {b.order}</p>{b.endDate && <p className="text-xs text-red-500">Berakhir: {new Date(b.endDate).toLocaleDateString("id-ID")}</p>}</div>
-                    <div className="flex gap-1">
-                      <button onClick={() => handleEditClick(b)} className="text-amber-500 hover:bg-amber-50 p-2 rounded-md transition-colors" title="Edit"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg></button>
-                      <button onClick={() => handleDeleteBanner(b.id)} className="text-red-500 hover:bg-red-50 p-2 rounded-md transition-colors" title="Hapus"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* TAB 7: LAPORAN KONSUMEN */}
-      {activeTab === "reports" && (
-        <div className="overflow-x-auto rounded-md border border-neutral-200 dark:border-neutral-800">
-          <table className="w-full text-sm text-left">
-            <thead className="bg-neutral-100 dark:bg-neutral-800">
-              <tr>
-                <th className="p-3">Tanggal</th>
-                <th className="p-3">Nama / Email</th>
-                <th className="p-3">Kategori</th>
-                <th className="p-3">Subjek</th>
-                <th className="p-3">Pesan</th>
-                <th className="p-3">Status</th>
-                <th className="p-3">Aksi</th>
-              </tr>
-            </thead>
-            <tbody>
-              {localReports.map((r) => (
-                <tr key={r.id} className="border-t border-neutral-200 dark:border-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-900/50">
-                  <td className="p-3 whitespace-nowrap">{new Date(r.createdAt).toLocaleDateString("id-ID")}</td>
-                  <td className="p-3">
-                    <div className="font-medium">{r.name}</div>
-                    <div className="text-xs text-neutral-500">{r.email}</div>
-                  </td>
-                  <td className="p-3">
-                    <span className={`px-2 py-0.5 text-xs rounded-full font-medium ${r.category === "PELANGGARAN" ? "bg-red-100 text-red-800" : "bg-blue-100 text-blue-800"}`}>
-                      {r.category}
-                    </span>
-                  </td>
-                  <td className="p-3 font-medium">{r.subject}</td>
-                  <td className="p-3">
-                    <div className="max-w-[250px] whitespace-normal line-clamp-3 hover:line-clamp-none cursor-pointer text-xs" title={r.message}>
-                      {r.message}
-                    </div>
-                  </td>
-                  <td className="p-3">
-                    <span className={`px-2 py-0.5 text-xs font-bold rounded-full ${
-                      r.status === "PENDING" ? "bg-amber-100 text-amber-800" : 
-                      r.status === "RESOLVED" ? "bg-green-100 text-green-800" : 
-                      "bg-neutral-200 text-neutral-700"
-                    }`}>
-                      {r.status}
-                    </span>
-                  </td>
-                  <td className="p-3">
-                    <div className="flex flex-col gap-2">
-                      {r.status === "PENDING" ? (
-                        <>
-                          {replyingTo === r.id && (
-                            <textarea 
-                              value={replyText}
-                              onChange={(e) => setReplyText(e.target.value)}
-                              placeholder="Ketik balasan..."
-                              className="w-full text-xs p-2 border rounded-md min-h-[60px]"
-                            />
-                          )}
-                          <div className="flex gap-2">
-                            <button 
-                              onClick={() => handleUpdateReportStatus(r.id, "RESOLVED")}
-                              disabled={updatingReportId === r.id}
-                              className="bg-forest-700 hover:bg-forest-500 text-white px-2.5 py-1 rounded text-xs disabled:opacity-50 whitespace-nowrap"
-                            >
-                              {replyingTo === r.id ? "Kirim & Selesai" : "✓ Selesai"}
-                            </button>
-                            
-                            {replyingTo === r.id ? (
-                              <button 
-                                onClick={() => setReplyingTo(null)}
-                                className="border border-neutral-300 text-neutral-600 hover:bg-neutral-100 px-2.5 py-1 rounded text-xs"
-                              >
-                                Batal
-                              </button>
-                            ) : (
-                              <button 
-                                onClick={() => handleUpdateReportStatus(r.id, "REJECTED")}
-                                disabled={updatingReportId === r.id}
-                                className="border border-neutral-300 text-neutral-600 hover:bg-neutral-100 px-2.5 py-1 rounded text-xs disabled:opacity-50 whitespace-nowrap"
-                              >
-                                ✕ Tolak
-                              </button>
-                            )}
-                          </div>
-                        </>
-                      ) : (
-                        <div className="flex flex-col gap-1 mb-2">
-                          <span className="text-xs text-neutral-400 italic">Sudah ditangani</span>
-                          {r.adminReply && (
-                            <span className="text-[10px] text-forest-700 bg-forest-50 p-1 rounded">Balasan: {r.adminReply}</span>
-                          )}
-                        </div>
-                      )}
-                      
-                      <button
-                        onClick={() => handleDeleteReport(r.id)}
-                        className="text-xs text-red-600 border border-red-200 bg-red-50 hover:bg-red-100 px-2.5 py-1 rounded whitespace-nowrap w-fit transition-colors"
-                      >
-                        🗑️ Hapus
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-              {localReports.length === 0 && (
-                <tr><td colSpan={7} className="p-4 text-center text-neutral-500">Belum ada laporan masuk.</td></tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      {/* ======================================================== */}
       {/* MODAL CROP GAMBAR BANNER */}
       {/* ======================================================== */}
       {isCropping && imageSrc && (
@@ -889,7 +957,7 @@ export default function AdminTabs({
             <div className="space-y-4">
               <div>
                 <label className="text-sm font-medium block mb-1">Pilih Status</label>
-                <select value={actionType} onChange={(e) => setActionType(e.target.value as any)} className="w-full h-10 rounded-md border px-3 text-sm dark:bg-neutral-800 dark:border-neutral-700">
+                <select value={actionType} onChange={(e) => setActionType(e.target.value as any)} className={inputClass}>
                   <option value="ACTIVE">Aktifkan Kembali (ACTIVE)</option>
                   <option value="SUSPENDED">Skorsing Sementara (SUSPENDED)</option>
                   <option value="BANNED">Blokir Permanen (BANNED)</option>
@@ -898,7 +966,7 @@ export default function AdminTabs({
               {actionType !== "ACTIVE" && (
                 <div>
                   <label className="text-sm font-medium block mb-1">Alasan (Wajib)</label>
-                  <textarea value={suspendReason} onChange={(e) => setSuspendReason(e.target.value)} rows={3} placeholder="Contoh: Terbukti melakukan penipuan..." className="w-full rounded-md border p-3 text-sm dark:bg-neutral-800 dark:border-neutral-700" />
+                  <textarea value={suspendReason} onChange={(e) => setSuspendReason(e.target.value)} rows={3} placeholder="Contoh: Terbukti melakukan penipuan..." className={`${inputClass} h-auto py-3`} />
                   <p className="text-xs text-red-500 mt-1">*Alasan ini akan muncul di layar login user.</p>
                 </div>
               )}

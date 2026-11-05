@@ -21,6 +21,9 @@ export default function SellerWorkspace() {
   const [promoDays, setPromoDays] = useState(3);
   const [savingPromo, setSavingPromo] = useState(false);
 
+  // CLASS INPUT AGAR TIDAK ABU-ABU DI HP
+  const inputClass = "w-full h-11 rounded-md border border-neutral-300 px-3 text-sm bg-white text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-forest-700 focus:border-transparent dark:bg-neutral-800 dark:border-neutral-700 dark:text-white dark:placeholder:text-neutral-500 dark:focus:ring-lime-400";
+
   const fetchData = async () => {
     const res = await fetch("/api/seller/dashboard", { cache: "no-store" });
     if (res.ok) {
@@ -69,7 +72,7 @@ export default function SellerWorkspace() {
     }
   }
 
-  if (loading) return <div className="p-8 text-center">Memuat data...</div>;
+  if (loading) return <div className="p-8 text-center text-neutral-500">Memuat data...</div>;
 
   const isPremium = company?.plan !== "FREE";
   const hasSponsoredProduct = products.some((p) => isCurrentlySponsored(p));
@@ -182,32 +185,32 @@ export default function SellerWorkspace() {
 
       {/* LOGO & INFO PERUSAHAAN */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-8">
-        <div className="flex h-24 w-40 shrink-0 items-center justify-center rounded-md border border-neutral-200 bg-white overflow-hidden dark:border-neutral-700">
+        <div className="flex h-24 w-40 shrink-0 items-center justify-center rounded-md border border-neutral-200 bg-white overflow-hidden dark:border-neutral-700 dark:bg-neutral-900">
           {company?.logoUrl ? (
             <img src={company.logoUrl} alt={company.name} className="h-full w-full object-contain p-2" />
           ) : (
-            <span className="text-2xl font-bold text-forest-700">{company?.name?.slice(0, 2).toUpperCase()}</span>
+            <span className="text-2xl font-bold text-forest-700 dark:text-lime-400">{company?.name?.slice(0, 2).toUpperCase()}</span>
           )}
         </div>
         <div>
-          <h1 className="text-2xl font-bold">{company?.name}</h1>
+          <h1 className="text-2xl font-bold text-neutral-900 dark:text-white">{company?.name}</h1>
           <p className="text-sm text-neutral-500">{company?.city}, {company?.province}</p>
         </div>
       </div>
 
       {/* KARTU METRIK */}
       <div className="grid gap-4 sm:grid-cols-3">
-        <div className="rounded-md border border-neutral-200 p-4 dark:border-neutral-800">
+        <div className="rounded-md border border-neutral-200 p-4 dark:border-neutral-800 dark:bg-neutral-900">
           <div className="text-sm text-neutral-500">{lang === "en" ? "Plan Status" : "Status Paket"}</div>
-          <div className="text-xl font-bold">{company?.plan}</div>
+          <div className="text-xl font-bold text-neutral-900 dark:text-white">{company?.plan}</div>
         </div>
-        <div className="rounded-md border border-neutral-200 p-4 dark:border-neutral-800">
+        <div className="rounded-md border border-neutral-200 p-4 dark:border-neutral-800 dark:bg-neutral-900">
           <div className="text-sm text-neutral-500">{lang === "en" ? "Verification" : "Status Verifikasi"}</div>
-          <div className="text-xl font-bold">{company?.verificationStatus}</div>
+          <div className="text-xl font-bold text-neutral-900 dark:text-white">{company?.verificationStatus}</div>
         </div>
-        <div className="rounded-md border border-neutral-200 p-4 dark:border-neutral-800">
+        <div className="rounded-md border border-neutral-200 p-4 dark:border-neutral-800 dark:bg-neutral-900">
           <div className="text-sm text-neutral-500">{lang === "en" ? "Total Products" : "Total Produk"}</div>
-          <div className={`text-xl font-bold ${activeProductsCount >= planLimit ? "text-red-600 dark:text-red-400" : ""}`}>
+          <div className={`text-xl font-bold ${activeProductsCount >= planLimit ? "text-red-600 dark:text-red-400" : "text-neutral-900 dark:text-white"}`}>
             {activeProductsCount} / {planLimit}
           </div>
         </div>
@@ -215,7 +218,7 @@ export default function SellerWorkspace() {
 
       {/* HEADER TABEL & TOMBOL AKSI */}
       <div className="mt-8 flex flex-col xl:flex-row xl:items-center justify-between gap-4">
-        <h2 className="font-display text-xl font-bold whitespace-nowrap">{lang === "en" ? "My Products" : "Produk Saya"}</h2>
+        <h2 className="font-display text-xl font-bold whitespace-nowrap text-neutral-900 dark:text-white">{lang === "en" ? "My Products" : "Produk Saya"}</h2>
         
         <div className="flex flex-wrap gap-2">
           
@@ -256,7 +259,7 @@ export default function SellerWorkspace() {
             </Link>
           )}
           
-          <Link href={`/${lang}/workspace/seller/profile`} className="rounded-md border border-neutral-300 px-3 py-1.5 text-sm font-medium hover:bg-neutral-50 dark:border-neutral-700 dark:hover:bg-neutral-800 transition-colors">
+          <Link href={`/${lang}/workspace/seller/profile`} className="rounded-md border border-neutral-300 px-3 py-1.5 text-sm font-medium text-neutral-700 hover:bg-neutral-50 dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-800 transition-colors">
             {lang === "en" ? "Edit Profile" : "Edit Profil"}
           </Link>
           
@@ -271,15 +274,15 @@ export default function SellerWorkspace() {
       </div>
 
       {/* TABEL PRODUK */}
-      <div className="mt-4 overflow-x-auto rounded-md border border-neutral-200 dark:border-neutral-800">
+      <div className="mt-4 overflow-x-auto rounded-md border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
         <table className="w-full text-sm text-left">
           <thead className="bg-neutral-100 dark:bg-neutral-800">
             <tr>
-              <th className="p-3 font-medium">{lang === "en" ? "Product" : "Produk"}</th>
-              <th className="p-3 font-medium">{lang === "en" ? "Status" : "Status"}</th>
-              <th className="p-3 font-medium">Promo</th>
-              <th className="p-3 font-medium whitespace-nowrap">{lang === "en" ? "Price" : "Harga"}</th>
-              <th className="p-3 font-medium whitespace-nowrap">{lang === "en" ? "Action" : "Aksi"}</th>
+              <th className="p-3 font-medium text-neutral-700 dark:text-neutral-300">{lang === "en" ? "Product" : "Produk"}</th>
+              <th className="p-3 font-medium text-neutral-700 dark:text-neutral-300">{lang === "en" ? "Status" : "Status"}</th>
+              <th className="p-3 font-medium text-neutral-700 dark:text-neutral-300">Promo</th>
+              <th className="p-3 font-medium whitespace-nowrap text-neutral-700 dark:text-neutral-300">{lang === "en" ? "Price" : "Harga"}</th>
+              <th className="p-3 font-medium whitespace-nowrap text-neutral-700 dark:text-neutral-300">{lang === "en" ? "Action" : "Aksi"}</th>
             </tr>
           </thead>
           <tbody>
@@ -294,7 +297,7 @@ export default function SellerWorkspace() {
                 : null;
 
               return (
-                <tr key={p.id} className="border-t border-neutral-200 dark:border-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-900/50 transition-colors">
+                <tr key={p.id} className="border-t border-neutral-200 dark:border-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition-colors">
                   <td className="p-3 flex items-center gap-3">
                     <div 
                       className={`h-12 w-12 shrink-0 overflow-hidden rounded-md border border-neutral-200 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 transition-transform duration-300 ${
@@ -310,7 +313,7 @@ export default function SellerWorkspace() {
                     </div>
 
                     <div className="flex flex-col gap-1">
-                      <span className="font-medium">{lang === "en" ? p.titleEn : p.titleId}</span>
+                      <span className="font-medium text-neutral-900 dark:text-white">{lang === "en" ? p.titleEn : p.titleId}</span>
                       {isCurrentlySponsored(p) && (
                         <span className={`w-fit rounded-sm px-1.5 py-0.5 text-[10px] font-bold ${
                           isHomepage ? "bg-amber-400 text-amber-950" :
@@ -324,15 +327,15 @@ export default function SellerWorkspace() {
                       )}
                     </div>
                   </td>
-                  <td className="p-3">{p.status}</td>
+                  <td className="p-3 text-neutral-700 dark:text-neutral-300">{p.status}</td>
                   <td className="p-3">
                     {isDiscountActive && displayDiscount ? (
-                      <span className="bg-red-100 text-red-700 px-2 py-0.5 rounded text-xs font-bold whitespace-nowrap">{displayDiscount}</span>
+                      <span className="bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 px-2 py-0.5 rounded text-xs font-bold whitespace-nowrap">{displayDiscount}</span>
                     ) : (
                       <span className="text-neutral-400 text-xs">-</span>
                     )}
                   </td>
-                  <td className="p-3 tabular-nums whitespace-nowrap">{p.priceMin ? `Rp ${p.priceMin.toLocaleString("id-ID")}` : "-"}</td>
+                  <td className="p-3 tabular-nums whitespace-nowrap text-neutral-900 dark:text-white">{p.priceMin ? `Rp ${p.priceMin.toLocaleString("id-ID")}` : "-"}</td>
                   
                   <td className="p-3">
                     <div className="flex items-center gap-3 whitespace-nowrap">
@@ -377,26 +380,26 @@ export default function SellerWorkspace() {
       {promoProduct && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
           <div className="bg-white dark:bg-neutral-900 rounded-xl shadow-2xl p-6 w-full max-w-md border border-neutral-200 dark:border-neutral-800">
-            <h3 className="font-bold text-xl mb-4">{lang === "en" ? "Set Discount Promo" : "Atur Promo Diskon"}</h3>
+            <h3 className="font-bold text-xl mb-4 text-neutral-900 dark:text-white">{lang === "en" ? "Set Discount Promo" : "Atur Promo Diskon"}</h3>
             <form onSubmit={handleSavePromo} className="space-y-4">
               <div>
-                <label className="text-sm font-medium block mb-1">{lang === "en" ? "Discount Label (Leave empty to remove)" : "Label Diskon (Kosongkan untuk hapus)"}</label>
+                <label className="text-sm font-medium block mb-1 text-neutral-700 dark:text-neutral-300">{lang === "en" ? "Discount Label (Leave empty to remove)" : "Label Diskon (Kosongkan untuk hapus)"}</label>
                 <input 
                   type="text" 
                   value={promoLabel}
                   onChange={(e) => setPromoLabel(e.target.value)}
                   placeholder={lang === "en" ? "e.g. 20" : "Contoh: 20"}
                   maxLength={20}
-                  className="w-full h-10 rounded-md border px-3 text-sm dark:bg-neutral-800 dark:border-neutral-700"
+                  className={inputClass}
                 />
                 <p className="text-xs text-neutral-500 mt-1">* {lang === "en" ? "No need to type '%'" : "Tidak perlu mengetik simbol '%'"}</p>
               </div>
               <div>
-                <label className="text-sm font-medium block mb-1">{lang === "en" ? "Promo Duration (Days)" : "Durasi Promo (Hari)"}</label>
+                <label className="text-sm font-medium block mb-1 text-neutral-700 dark:text-neutral-300">{lang === "en" ? "Promo Duration (Days)" : "Durasi Promo (Hari)"}</label>
                 <select 
                   value={promoDays}
                   onChange={(e) => setPromoDays(Number(e.target.value))}
-                  className="w-full h-10 rounded-md border px-3 text-sm dark:bg-neutral-800 dark:border-neutral-700"
+                  className={inputClass}
                   disabled={!promoLabel}
                 >
                   <option value={3}>3 Hari</option>
@@ -407,7 +410,7 @@ export default function SellerWorkspace() {
               </div>
               
               <div className="flex justify-end gap-2 mt-6">
-                <button type="button" onClick={() => setPromoProduct(null)} className="px-4 py-2 text-sm font-medium text-neutral-600 hover:bg-neutral-100 rounded-md">{lang === "en" ? "Cancel" : "Batal"}</button>
+                <button type="button" onClick={() => setPromoProduct(null)} className="px-4 py-2 text-sm font-medium text-neutral-600 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800 rounded-md">{lang === "en" ? "Cancel" : "Batal"}</button>
                 <button type="submit" disabled={savingPromo} className="px-4 py-2 text-sm font-medium text-white bg-forest-700 hover:bg-forest-500 rounded-md disabled:opacity-50">
                   {savingPromo ? (lang === "en" ? "Saving..." : "Menyimpan...") : (lang === "en" ? "Save Promo" : "Simpan Promo")}
                 </button>

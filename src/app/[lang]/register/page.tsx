@@ -11,7 +11,7 @@ export default function RegisterPage() {
   const lang = params.lang === "en" ? "en" : "id";
 
   // 1. STATE FORM
-  const [role, setRole] = useState<"BUYER" | "SUPPLIER">("BUYER"); // Default ke Buyer agar sesuai screenshot
+  const [role, setRole] = useState<"BUYER" | "SUPPLIER">("BUYER");
   const [loading, setLoading] = useState(false);
   const [isGuideOpen, setIsGuideOpen] = useState(false);
   const [form, setForm] = useState({
@@ -105,10 +105,13 @@ export default function RegisterPage() {
     }
   }
 
+  // CLASS INPUT YANG SUDAH DIPERBAIKI UNTUK MOBILE DARK MODE
+  const inputClass = "w-full h-11 rounded-md border border-neutral-300 px-3 text-sm bg-white text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-forest-700 focus:border-transparent dark:bg-neutral-800 dark:border-neutral-700 dark:text-white dark:placeholder:text-neutral-500 dark:focus:ring-lime-400";
+
   return (
     <div className="mx-auto max-w-2xl px-4 py-12">
       
-      {/* TABS: PILIH ROLE (DIPERBAIKI: Buyer sekarang hijau penuh saat aktif) */}
+      {/* TABS: PILIH ROLE */}
       <div className="flex w-full mb-4">
         <button
           type="button"
@@ -158,17 +161,17 @@ export default function RegisterPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="text-sm font-medium block mb-1">{lang === "en" ? "Full Name" : "Nama Lengkap"}</label>
-            <input required type="text" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="w-full h-11 rounded-md border px-3 text-sm dark:bg-neutral-800 dark:border-neutral-700 outline-none focus:ring-2 focus:ring-forest-700/20 focus:border-forest-700" placeholder="John Doe" />
+            <input required type="text" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className={inputClass} placeholder="John Doe" />
           </div>
           <div>
             <label className="text-sm font-medium block mb-1">Email</label>
-            <input required type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="w-full h-11 rounded-md border px-3 text-sm dark:bg-neutral-800 dark:border-neutral-700 outline-none focus:ring-2 focus:ring-forest-700/20 focus:border-forest-700" placeholder="email@contoh.com" />
+            <input required type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className={inputClass} placeholder="email@contoh.com" />
           </div>
         </div>
 
         <div>
           <label className="text-sm font-medium block mb-1">Password</label>
-          <input required type="password" minLength={6} value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} className="w-full h-11 rounded-md border px-3 text-sm dark:bg-neutral-800 dark:border-neutral-700 outline-none focus:ring-2 focus:ring-forest-700/20 focus:border-forest-700" placeholder="Minimal 6 karakter" />
+          <input required type="password" minLength={6} value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} className={inputClass} placeholder="Minimal 6 karakter" />
         </div>
 
         {/* DATA PERUSAHAAN */}
@@ -200,26 +203,26 @@ export default function RegisterPage() {
           <div className="space-y-4">
             <div>
               <label className="text-sm font-medium block mb-1">{lang === "en" ? "Company Name" : "Nama Perusahaan"}</label>
-              <input required type="text" value={form.companyName} onChange={(e) => setForm({ ...form, companyName: e.target.value })} className="w-full h-11 rounded-md border px-3 text-sm dark:bg-neutral-800 dark:border-neutral-700 outline-none focus:ring-2 focus:ring-forest-700/20 focus:border-forest-700" placeholder="PT. Contoh Makmur" />
+              <input required type="text" value={form.companyName} onChange={(e) => setForm({ ...form, companyName: e.target.value })} className={inputClass} placeholder="PT. Contoh Makmur" />
             </div>
 
             <div>
               <label className="text-sm font-medium block mb-1">{lang === "en" ? "Company Description" : "Deskripsi Perusahaan"}</label>
-              <textarea rows={3} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="w-full rounded-md border p-3 text-sm dark:bg-neutral-800 dark:border-neutral-700 outline-none focus:ring-2 focus:ring-forest-700/20 focus:border-forest-700" placeholder="Ceritakan tentang perusahaan Anda..." />
+              <textarea rows={3} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className={`${inputClass} h-auto py-3`} placeholder="Ceritakan tentang perusahaan Anda..." />
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div><label className="text-sm font-medium block mb-1">{lang === "en" ? "City" : "Kota"}</label><input type="text" value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} className="w-full h-11 rounded-md border px-3 text-sm dark:bg-neutral-800 dark:border-neutral-700 outline-none" /></div>
-              <div><label className="text-sm font-medium block mb-1">{lang === "en" ? "Province" : "Provinsi"}</label><input type="text" value={form.province} onChange={(e) => setForm({ ...form, province: e.target.value })} className="w-full h-11 rounded-md border px-3 text-sm dark:bg-neutral-800 dark:border-neutral-700 outline-none" /></div>
+              <div><label className="text-sm font-medium block mb-1">{lang === "en" ? "City" : "Kota"}</label><input type="text" value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} className={inputClass} /></div>
+              <div><label className="text-sm font-medium block mb-1">{lang === "en" ? "Province" : "Provinsi"}</label><input type="text" value={form.province} onChange={(e) => setForm({ ...form, province: e.target.value })} className={inputClass} /></div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div><label className="text-sm font-medium block mb-1">Website</label><input type="url" value={form.website} onChange={(e) => setForm({ ...form, website: e.target.value })} className="w-full h-11 rounded-md border px-3 text-sm dark:bg-neutral-800 dark:border-neutral-700 outline-none" placeholder="https://..." /></div>
-              <div><label className="text-sm font-medium block mb-1">{lang === "en" ? "Year Established" : "Tahun Berdiri"}</label><input type="number" value={form.yearEstablished} onChange={(e) => setForm({ ...form, yearEstablished: e.target.value })} className="w-full h-11 rounded-md border px-3 text-sm dark:bg-neutral-800 dark:border-neutral-700 outline-none" placeholder="2020" /></div>
+              <div><label className="text-sm font-medium block mb-1">Website</label><input type="url" value={form.website} onChange={(e) => setForm({ ...form, website: e.target.value })} className={inputClass} placeholder="https://..." /></div>
+              <div><label className="text-sm font-medium block mb-1">{lang === "en" ? "Year Established" : "Tahun Berdiri"}</label><input type="number" value={form.yearEstablished} onChange={(e) => setForm({ ...form, yearEstablished: e.target.value })} className={inputClass} placeholder="2020" /></div>
             </div>
 
-            <div><label className="text-sm font-medium block mb-1">{lang === "en" ? "Full Address" : "Alamat Lengkap"}</label><input type="text" value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} className="w-full h-11 rounded-md border px-3 text-sm dark:bg-neutral-800 dark:border-neutral-700 outline-none" /></div>
-            <div><label className="text-sm font-medium block mb-1">{lang === "en" ? "Phone Number" : "Nomor Telepon"}</label><input type="tel" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="w-full h-11 rounded-md border px-3 text-sm dark:bg-neutral-800 dark:border-neutral-700 outline-none" /></div>
+            <div><label className="text-sm font-medium block mb-1">{lang === "en" ? "Full Address" : "Alamat Lengkap"}</label><input type="text" value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} className={inputClass} /></div>
+            <div><label className="text-sm font-medium block mb-1">{lang === "en" ? "Phone Number" : "Nomor Telepon"}</label><input type="tel" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className={inputClass} /></div>
 
             <div className="flex items-center gap-2 pt-2">
               <input type="checkbox" id="exportCapability" checked={form.exportCapability} onChange={(e) => setForm({ ...form, exportCapability: e.target.checked })} className="h-4 w-4 accent-forest-700 rounded border-neutral-300" />
@@ -238,9 +241,7 @@ export default function RegisterPage() {
         </p>
       </form>
 
-      {/* ============================================================ */}
-      {/* MODAL PANDUAN PERBEDAAN & ALUR KERJA */}
-      {/* ============================================================ */}
+      {/* MODAL PANDUAN */}
       {isGuideOpen && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm" onClick={() => setIsGuideOpen(false)}>
           <div className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-xl bg-white p-6 shadow-2xl dark:bg-neutral-900" onClick={(e) => e.stopPropagation()}>
@@ -250,7 +251,6 @@ export default function RegisterPage() {
             </div>
 
             <div className="space-y-6 text-sm">
-              {/* BUYER SECTION */}
               <div className={`p-4 rounded-lg border ${role === 'BUYER' ? 'border-forest-700 bg-forest-50 dark:bg-forest-900/20' : 'border-neutral-200 dark:border-neutral-800'}`}>
                 <h4 className="font-bold text-lg mb-2 text-forest-900 dark:text-lime-400">🛒 Peran: Buyer (Pembeli)</h4>
                 <p className="text-neutral-600 dark:text-neutral-300 mb-3">Cocok untuk perusahaan yang ingin mencari barang/jasa untuk kebutuhan operasional atau dijual kembali.</p>
@@ -262,7 +262,6 @@ export default function RegisterPage() {
                 </ul>
               </div>
 
-              {/* SUPPLIER SECTION */}
               <div className={`p-4 rounded-lg border ${role === 'SUPPLIER' ? 'border-forest-700 bg-forest-50 dark:bg-forest-900/20' : 'border-neutral-200 dark:border-neutral-800'}`}>
                 <h4 className="font-bold text-lg mb-2 text-forest-900 dark:text-lime-400">🏭 Peran: Supplier (Pemasok)</h4>
                 <p className="text-neutral-600 dark:text-neutral-300 mb-3">Cocok untuk produsen, distributor, atau eksportir yang ingin menawarkan produk ke pasar B2B.</p>
