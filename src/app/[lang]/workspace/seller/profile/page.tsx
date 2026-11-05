@@ -8,8 +8,9 @@ export default function EditProfile() {
   const params = useParams();
   const router = useRouter();
   const lang = params.lang === "en" ? "en" : "id";
-  
+
   const [profile, setProfile] = useState<any>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -19,14 +20,21 @@ export default function EditProfile() {
   const inputClass = "w-full h-11 rounded-md border border-neutral-300 px-3 text-sm bg-white text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-forest-700 focus:border-transparent dark:bg-neutral-800 dark:border-neutral-700 dark:text-white dark:placeholder:text-neutral-500 dark:focus:ring-lime-400";
 
   useEffect(() => {
-    fetch("/api/seller/profile")
-      .then(res => res.json())
+    fetch("/api/seller/profile", { cache: "no-store" })
+      .then(res => {
+        if (!res.ok) {
+          return res.json().catch(() => ({})).then(body => {
+            throw new Error(body.error || `Gagal memuat profil (HTTP ${res.status})`);
+          });
+        }
+        return res.json();
+      })
       .then(data => {
         setProfile(data);
         setLoading(false);
       })
-      .catch(() => {
-        toast.error("Gagal memuat profil.");
+      .catch((err) => {
+        setLoadError(err.message || "Gagal memuat profil.");
         setLoading(false);
       });
   }, []);
@@ -61,9 +69,10 @@ export default function EditProfile() {
     e.preventDefault();
     setSaving(true);
     const fd = new FormData(e.currentTarget);
-    
+
     const body = {
       name: fd.get("name"),
+      type: String(fd.get("type") || "MANUFACTURER"),
       description: fd.get("description"),
       city: fd.get("city"),
       province: fd.get("province"),
@@ -82,13 +91,16 @@ export default function EditProfile() {
         body: JSON.stringify(body),
       });
 
-      if (!res.ok) throw new Error();
-      
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Gagal menyimpan.");
+      }
+
       toast.success("Profil perusahaan berhasil diperbarui!");
       router.push(`/${lang}/workspace/seller`);
       router.refresh();
-    } catch {
-      toast.error("Gagal menyimpan perubahan.");
+    } catch (err: any) {
+      toast.error(err.message || "Gagal menyimpan perubahan.");
     } finally {
       setSaving(false);
     }
@@ -96,11 +108,28 @@ export default function EditProfile() {
 
   if (loading) return <div className="p-8 text-center text-neutral-500">Memuat profil...</div>;
 
+  if (loadError || !profile || profile.error) {
+    return (
+      <div className="mx-auto max-w-2xl px-4 py-8">
+        <div className="rounded-lg border border-red-300 bg-red-50 p-4 text-sm text-red-800 dark:border-red-800 dark:bg-red-900/20 dark:text-red-200">
+          <p className="font-bold mb-1">Gagal memuat profil</p>
+          <p>{loadError || profile?.error || "Data profil kosong."}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="mt-3 px-3 py-1.5 rounded-md bg-red-600 text-white text-xs font-bold hover:bg-red-700"
+          >
+            Coba lagi
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="mx-auto max-w-2xl px-4 py-8">
       <h1 className="font-display text-2xl font-bold mb-6 text-neutral-900 dark:text-white">Edit Profil Perusahaan</h1>
-      
-      <form onSubmit={onSubmit} className="space-y-6">
+
+      <form key={profile.id} onSubmit={onSubmit} className="space-y-6">
         {/* Logo Upload */}
         <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
           <div className="flex h-32 w-48 shrink-0 items-center justify-center rounded-lg border border-neutral-300 bg-white overflow-hidden dark:border-neutral-700 dark:bg-neutral-900">
@@ -122,6 +151,19 @@ export default function EditProfile() {
         <div>
           <label className="text-sm font-medium block mb-1 text-neutral-700 dark:text-neutral-300">Nama Perusahaan</label>
           <input name="name" defaultValue={profile.name} required className={inputClass} />
+        </div>
+
+        {/* TIPE BISNIS — 6 opsi (BARU DITAMBAHKAN) */}
+        <div>
+          <label className="text-sm font-medium block mb-1 text-neutral-700 dark:text-neutral-300">Tipe Bisnis</label>
+          <select name="type" defaultValue={profile.type || "MANUFACTURER"} className={inputClass}>
+            <option value="BUYER">Buyer</option>
+            <option value="SERVICE_PROVIDER">Penyedia Jasa</option>
+            <option value="MANUFACTURER">Produsen</option>
+            <option value="DISTRIBUTOR">Distributor</option>
+            <option value="EXPORTER">Eksportir</option>
+            <option value="INDUSTRY">Industri</option>
+          </select>
         </div>
 
         <div>
@@ -164,11 +206,11 @@ export default function EditProfile() {
 
         {/* CUSTOM CHECKBOX EXPORT (CEKLIS SUDAH DIPERBAIKI) */}
         <label className="flex items-start gap-3 p-4 border border-neutral-200 rounded-lg bg-neutral-50 dark:bg-neutral-800/50 dark:border-neutral-700 cursor-pointer">
-          <input 
-            type="checkbox" 
-            name="exportCapability" 
-            defaultChecked={profile.exportCapability} 
-            className="sr-only peer" 
+          <input
+            type="checkbox"
+            name="exportCapability"
+            defaultChecked={profile.exportCapability}
+            className="sr-only peer"
           />
           {/* Tambahkan peer-checked:[&_svg]:opacity-100 di sini */}
           <div className="mt-0.5 h-5 w-5 shrink-0 rounded border border-neutral-300 bg-white dark:border-neutral-500 dark:bg-neutral-700 peer-checked:bg-forest-700 peer-checked:border-forest-700 dark:peer-checked:bg-lime-400 dark:peer-checked:border-lime-400 peer-checked:[&_svg]:opacity-100 flex items-center justify-center transition-colors">
