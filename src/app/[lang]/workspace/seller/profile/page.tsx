@@ -98,7 +98,7 @@ export default function EditProfile() {
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-8">
-      <h1 className="font-display text-2xl font-bold mb-6">Edit Profil Perusahaan</h1>
+      <h1 className="font-display text-2xl font-bold mb-6 text-neutral-900 dark:text-white">Edit Profil Perusahaan</h1>
       
       <form onSubmit={onSubmit} className="space-y-6">
         {/* Logo Upload */}
@@ -120,22 +120,22 @@ export default function EditProfile() {
         </div>
 
         <div>
-          <label className="text-sm font-medium block mb-1">Nama Perusahaan</label>
+          <label className="text-sm font-medium block mb-1 text-neutral-700 dark:text-neutral-300">Nama Perusahaan</label>
           <input name="name" defaultValue={profile.name} required className={inputClass} />
         </div>
 
         <div>
-          <label className="text-sm font-medium block mb-1">Deskripsi Perusahaan</label>
+          <label className="text-sm font-medium block mb-1 text-neutral-700 dark:text-neutral-300">Deskripsi Perusahaan</label>
           <textarea name="description" defaultValue={profile.description || ""} rows={4} className={`${inputClass} h-auto py-3`} placeholder="Ceritakan tentang perusahaan Anda..." />
         </div>
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="text-sm font-medium block mb-1">Kota</label>
+            <label className="text-sm font-medium block mb-1 text-neutral-700 dark:text-neutral-300">Kota</label>
             <input name="city" defaultValue={profile.city || ""} className={inputClass} />
           </div>
           <div>
-            <label className="text-sm font-medium block mb-1">Provinsi</label>
+            <label className="text-sm font-medium block mb-1 text-neutral-700 dark:text-neutral-300">Provinsi</label>
             <input name="province" defaultValue={profile.province || ""} className={inputClass} />
           </div>
         </div>
@@ -143,28 +143,37 @@ export default function EditProfile() {
         {/* Website & Tahun Berdiri */}
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="text-sm font-medium block mb-1">Website</label>
+            <label className="text-sm font-medium block mb-1 text-neutral-700 dark:text-neutral-300">Website</label>
             <input name="website" defaultValue={profile.website || ""} placeholder="https://..." className={inputClass} />
           </div>
           <div>
-            <label className="text-sm font-medium block mb-1">Tahun Berdiri</label>
+            <label className="text-sm font-medium block mb-1 text-neutral-700 dark:text-neutral-300">Tahun Berdiri</label>
             <input name="yearEstablished" type="number" defaultValue={profile.yearEstablished || ""} placeholder="2020" className={inputClass} />
           </div>
         </div>
 
         {/* Alamat & Telepon */}
         <div>
-          <label className="text-sm font-medium block mb-1">Alamat Lengkap</label>
+          <label className="text-sm font-medium block mb-1 text-neutral-700 dark:text-neutral-300">Alamat Lengkap</label>
           <input name="address" defaultValue={profile.address || ""} placeholder="Jl. Contoh No. 123" className={inputClass} />
         </div>
         <div>
-          <label className="text-sm font-medium block mb-1">Nomor Telepon</label>
+          <label className="text-sm font-medium block mb-1 text-neutral-700 dark:text-neutral-300">Nomor Telepon</label>
           <input name="phone" defaultValue={profile.phone || ""} placeholder="021-1234567 atau 08123456789" className={inputClass} />
         </div>
 
-        <div className="flex items-center gap-2 pt-2">
-          <input type="checkbox" name="exportCapability" defaultChecked={profile.exportCapability} className="h-4 w-4 accent-forest-700 rounded border-neutral-300" id="export" />
-          <label htmlFor="export" className="text-sm font-medium cursor-pointer">Perusahaan ini mampu melayani ekspor</label>
+        {/* CHECKBOX EXPORT (DIPERBAIKI) */}
+        <div className="flex items-center gap-3 p-4 border border-neutral-200 rounded-lg bg-neutral-50 dark:bg-neutral-800/50 dark:border-neutral-700">
+          <input 
+            type="checkbox" 
+            name="exportCapability" 
+            defaultChecked={profile.exportCapability} 
+            className="h-5 w-5 accent-forest-700 rounded border border-neutral-300 bg-white focus:ring-forest-700 dark:border-neutral-600 dark:bg-neutral-800 dark:focus:ring-lime-400" 
+            id="export" 
+          />
+          <label htmlFor="export" className="text-sm font-medium cursor-pointer text-neutral-900 dark:text-neutral-200">
+            Perusahaan ini mampu melayani ekspor
+          </label>
         </div>
 
         <div className="flex gap-3 pt-6 border-t border-neutral-200 dark:border-neutral-800">

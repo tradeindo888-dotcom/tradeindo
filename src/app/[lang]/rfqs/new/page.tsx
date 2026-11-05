@@ -169,24 +169,24 @@ export default function NewRfqPage() {
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-8">
-      <h1 className="font-display text-2xl font-bold mb-6">
+      <h1 className="font-display text-2xl font-bold mb-6 text-neutral-900 dark:text-white">
         {lang === "en" ? "Create New RFQ" : "Buat RFQ Baru"}
       </h1>
 
       <form onSubmit={handleSubmit} className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl p-6 shadow-sm space-y-5">
         
         <div>
-          <label className="text-sm font-medium block mb-1">Judul RFQ</label>
+          <label className="text-sm font-medium block mb-1 text-neutral-700 dark:text-neutral-300">Judul RFQ</label>
           <input required value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className={inputClass} placeholder="Contoh: Butuh Kopi Arabika 500kg" />
         </div>
 
         <div>
-          <label className="text-sm font-medium block mb-1">Deskripsi</label>
+          <label className="text-sm font-medium block mb-1 text-neutral-700 dark:text-neutral-300">Deskripsi</label>
           <textarea required rows={3} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className={`${inputClass} h-auto py-3`} placeholder="Jelaskan kebutuhan Anda secara detail..." />
         </div>
 
         <div>
-          <label className="text-sm font-medium block mb-1">Kategori</label>
+          <label className="text-sm font-medium block mb-1 text-neutral-700 dark:text-neutral-300">Kategori</label>
           <select required value={form.categoryId} onChange={(e) => setForm({ ...form, categoryId: e.target.value })} className={inputClass}>
             <option value="">Pilih Kategori...</option>
             {categories.map((c) => (
@@ -197,40 +197,40 @@ export default function NewRfqPage() {
 
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="text-sm font-medium block mb-1">Jumlah</label>
+            <label className="text-sm font-medium block mb-1 text-neutral-700 dark:text-neutral-300">Jumlah</label>
             <input required type="number" min={1} value={form.quantity} onChange={(e) => setForm({ ...form, quantity: e.target.value })} className={inputClass} />
           </div>
           <div>
-            <label className="text-sm font-medium block mb-1">Satuan</label>
+            <label className="text-sm font-medium block mb-1 text-neutral-700 dark:text-neutral-300">Satuan</label>
             <input value={form.quantityUnit} onChange={(e) => setForm({ ...form, quantityUnit: e.target.value })} className={inputClass} placeholder="pcs / kg / ton" />
           </div>
         </div>
 
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="text-sm font-medium block mb-1">Harga Target Min (Rp)</label>
+            <label className="text-sm font-medium block mb-1 text-neutral-700 dark:text-neutral-300">Harga Target Min (Rp)</label>
             <input type="number" min={0} value={form.targetPrice} onChange={(e) => setForm({ ...form, targetPrice: e.target.value })} className={inputClass} />
           </div>
           <div>
-            <label className="text-sm font-medium block mb-1">Harga Target Max (Rp)</label>
+            <label className="text-sm font-medium block mb-1 text-neutral-700 dark:text-neutral-300">Harga Target Max (Rp)</label>
             <input type="number" min={0} value={form.targetPriceMax} onChange={(e) => setForm({ ...form, targetPriceMax: e.target.value })} className={inputClass} />
           </div>
         </div>
 
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="text-sm font-medium block mb-1">Kota Pengiriman</label>
+            <label className="text-sm font-medium block mb-1 text-neutral-700 dark:text-neutral-300">Kota Pengiriman</label>
             <input value={form.deliveryCity} onChange={(e) => setForm({ ...form, deliveryCity: e.target.value })} className={inputClass} placeholder="Jakarta, Surabaya..." />
           </div>
           <div>
-            <label className="text-sm font-medium block mb-1">Batas Waktu</label>
+            <label className="text-sm font-medium block mb-1 text-neutral-700 dark:text-neutral-300">Batas Waktu</label>
             <input required type="date" value={form.deadlineAt} onChange={(e) => setForm({ ...form, deadlineAt: e.target.value })} className={inputClass} />
           </div>
         </div>
 
         {/* UPLOAD GAMBAR */}
-        <div className="rounded-md border border-dashed border-neutral-300 p-4 dark:border-neutral-700">
-          <label className="text-sm font-medium block mb-2">Gambar Referensi (Maks 3)</label>
+        <div className="rounded-md border border-dashed border-neutral-300 p-4 dark:border-neutral-700 bg-white dark:bg-neutral-900">
+          <label className="text-sm font-medium block mb-2 text-neutral-700 dark:text-neutral-300">Gambar Referensi (Maks 3)</label>
           <input type="file" multiple accept="image/*" ref={fileInputRef} onChange={handleImageUpload} className="block w-full text-sm text-neutral-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:font-semibold file:bg-forest-700 file:text-white hover:file:bg-forest-500" />
           {uploading && <p className="mt-2 text-sm text-blue-600">Mengunggah gambar...</p>}
           
@@ -246,14 +246,23 @@ export default function NewRfqPage() {
           )}
         </div>
 
-        <label className="flex items-center gap-2 text-sm cursor-pointer pt-2">
-          <input type="checkbox" checked={form.verifiedOnly} onChange={(e) => setForm({ ...form, verifiedOnly: e.target.checked })} className="h-4 w-4 accent-forest-700 rounded" />
-          Hanya tampilkan ke supplier terverifikasi
-        </label>
+        {/* CHECKBOX VERIFIED ONLY (DIPERBAIKI) */}
+        <div className="flex items-center gap-3 p-4 border border-neutral-200 rounded-lg bg-neutral-50 dark:bg-neutral-800/50 dark:border-neutral-700">
+          <input 
+            type="checkbox" 
+            checked={form.verifiedOnly} 
+            onChange={(e) => setForm({ ...form, verifiedOnly: e.target.checked })} 
+            className="h-5 w-5 accent-forest-700 rounded border border-neutral-300 bg-white focus:ring-forest-700 dark:border-neutral-600 dark:bg-neutral-800 dark:focus:ring-lime-400" 
+            id="verifiedOnly"
+          />
+          <label htmlFor="verifiedOnly" className="text-sm font-medium cursor-pointer text-neutral-900 dark:text-neutral-200">
+            Hanya tampilkan ke supplier terverifikasi
+          </label>
+        </div>
 
         <div className="flex gap-3 pt-4">
-          <Button type="submit" disabled={loading || uploading} className="flex-1">{loading ? "Membuat RFQ..." : "Buat RFQ"}</Button>
-          <Button type="button" variant="ghost" onClick={() => router.back()} disabled={loading}>Batal</Button>
+          <Button type="submit" disabled={loading || uploading} className="flex-1 h-11">{loading ? "Membuat RFQ..." : "Buat RFQ"}</Button>
+          <Button type="button" variant="ghost" onClick={() => router.back()} disabled={loading} className="h-11">Batal</Button>
         </div>
       </form>
 
