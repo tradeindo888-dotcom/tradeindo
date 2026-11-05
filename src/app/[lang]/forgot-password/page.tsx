@@ -40,20 +40,28 @@ export default function ForgotPassword() {
 
       <form onSubmit={onSubmit} className="mt-6 space-y-4">
         <div>
-          <label className="text-sm font-medium">Email</label>
-          <input name="email" type="email" required className="mt-1 h-11 w-full rounded-md border border-neutral-300 px-3 text-sm dark:border-neutral-700 dark:bg-neutral-900" />
+          <label className="text-sm font-medium block mb-1">Email</label>
+          {/* Input dibuat putih dan teks hitam secara eksplisit */}
+          <input 
+            name="email" 
+            type="email" 
+            required 
+            className="h-11 w-full rounded-md border border-neutral-300 bg-white px-3 text-sm text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-forest-700 focus:border-transparent dark:border-neutral-700 dark:bg-neutral-800 dark:text-white dark:placeholder:text-neutral-500 dark:focus:ring-lime-400" 
+          />
         </div>
         
         {message && <p className="text-sm text-green-600 bg-green-50 p-3 rounded-md border border-green-200">{message}</p>}
         {error && <p className="text-sm text-red-600 bg-red-50 p-3 rounded-md border border-red-200">{error}</p>}
         
-        <Button type="submit" disabled={loading} className="w-full">
+        <Button type="submit" disabled={loading} className="w-full h-11 text-base font-bold">
           {loading ? "Memproses..." : (lang === "en" ? "Send Reset Link" : "Kirim Link Reset")}
         </Button>
       </form>
       
-      <p className="mt-4 text-sm text-center">
-        <Link href={`/${lang}/login`} className="text-forest-700 hover:underline dark:text-lime-400">Kembali ke Login</Link>
+      <p className="mt-6 text-sm text-center">
+        <Link href={`/${lang}/login`} className="text-neutral-900 dark:text-white hover:text-forest-700 dark:hover:text-lime-400 font-semibold hover:underline">
+          Kembali ke Login
+        </Link>
       </p>
     </div>
   );

@@ -43,7 +43,8 @@ export default function ChangePassword() {
     }
   }
 
-  const inputClass = "mt-1 h-11 w-full rounded-md border border-neutral-300 px-3 text-sm dark:border-neutral-700 dark:bg-neutral-900";
+  // Menambahkan bg-white, text-neutral-900, dan styling fokus
+  const inputClass = "h-11 w-full rounded-md border border-neutral-300 bg-white px-3 text-sm text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-forest-700 focus:border-transparent dark:border-neutral-700 dark:bg-neutral-800 dark:text-white dark:placeholder:text-neutral-500 dark:focus:ring-lime-400";
 
   return (
     <div className="mx-auto max-w-md px-4 py-16">
@@ -54,30 +55,30 @@ export default function ChangePassword() {
 
       <form onSubmit={onSubmit} className="mt-6 space-y-4">
         <div>
-          <label className="text-sm font-medium">Email</label>
+          <label className="text-sm font-medium block mb-1">Email</label>
           <input name="email" type="email" required className={inputClass} />
         </div>
         <div>
-          <label className="text-sm font-medium">{lang === "en" ? "Old Password" : "Password Lama"}</label>
+          <label className="text-sm font-medium block mb-1">{lang === "en" ? "Old Password" : "Password Lama"}</label>
           <input name="oldPassword" type="password" required className={inputClass} />
         </div>
         <div>
-          <label className="text-sm font-medium">{lang === "en" ? "New Password" : "Password Baru"}</label>
+          <label className="text-sm font-medium block mb-1">{lang === "en" ? "New Password" : "Password Baru"}</label>
           <input name="newPassword" type="password" minLength={6} required className={inputClass} />
         </div>
         <div>
-          <label className="text-sm font-medium">{lang === "en" ? "Confirm New Password" : "Konfirmasi Password Baru"}</label>
+          <label className="text-sm font-medium block mb-1">{lang === "en" ? "Confirm New Password" : "Konfirmasi Password Baru"}</label>
           <input name="confirmPassword" type="password" minLength={6} required className={inputClass} />
         </div>
         
-        <Button type="submit" disabled={loading} className="w-full">
+        <Button type="submit" disabled={loading} className="w-full h-11 text-base font-bold">
           {loading ? "Memproses..." : (lang === "en" ? "Save New Password" : "Simpan Password Baru")}
         </Button>
       </form>
       
-      <p className="mt-4 text-sm text-center">
-        <Link href={`/${lang}/login`} className="text-forest-700 hover:underline dark:text-lime-400">
-          {lang === "en" ? "Back to Login" : "Kembali ke Login"}
+      <p className="mt-6 text-sm text-center">
+        <Link href={`/${lang}/login`} className="text-neutral-900 dark:text-white hover:text-forest-700 dark:hover:text-lime-400 font-semibold hover:underline">
+          Kembali ke Login
         </Link>
       </p>
     </div>
