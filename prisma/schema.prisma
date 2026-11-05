@@ -252,8 +252,9 @@ model Message {
   senderName     String
   content        String
   fileUrl        String?      
-   isRead         Boolean     @default(false)
+  isRead         Boolean     @default(false)
   createdAt      DateTime     @default(now())
+  deletedAt      DateTime?
 }
 
 model SubscriptionRequest {
