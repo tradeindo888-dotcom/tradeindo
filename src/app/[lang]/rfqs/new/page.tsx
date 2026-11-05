@@ -246,16 +246,17 @@ export default function NewRfqPage() {
           )}
         </div>
 
-        {/* CUSTOM CHECKBOX (ANTI GELAP DI HP) */}
+        {/* CUSTOM CHECKBOX (CEKLIS SUDAH DIPERBAIKI) */}
         <label className="flex items-start gap-3 p-4 border border-neutral-200 rounded-lg bg-neutral-50 dark:bg-neutral-800/50 dark:border-neutral-700 cursor-pointer">
           <input 
             type="checkbox" 
             checked={form.verifiedOnly} 
             onChange={(e) => setForm({ ...form, verifiedOnly: e.target.checked })} 
-            className="sr-only peer" // Sembunyikan aslinya
+            className="sr-only peer" 
           />
-          <div className="mt-0.5 h-5 w-5 shrink-0 rounded border border-neutral-300 bg-white dark:border-neutral-500 dark:bg-neutral-700 peer-checked:bg-forest-700 peer-checked:border-forest-700 dark:peer-checked:bg-lime-400 dark:peer-checked:border-lime-400 flex items-center justify-center transition-colors">
-            <svg className="w-3.5 h-3.5 text-white dark:text-neutral-900 opacity-0 peer-checked:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          {/* Tambahan peer-checked:[&_svg]:opacity-100 agar centang muncul */}
+          <div className="mt-0.5 h-5 w-5 shrink-0 rounded border border-neutral-300 bg-white dark:border-neutral-500 dark:bg-neutral-700 peer-checked:bg-forest-700 peer-checked:border-forest-700 dark:peer-checked:bg-lime-400 dark:peer-checked:border-lime-400 peer-checked:[&_svg]:opacity-100 flex items-center justify-center transition-colors">
+            <svg className="w-3.5 h-3.5 text-white dark:text-neutral-900 opacity-0 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
             </svg>
           </div>
