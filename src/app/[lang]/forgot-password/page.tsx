@@ -25,7 +25,7 @@ export default function ForgotPassword() {
 
     setLoading(false);
     if (res.ok) {
-      setMessage(lang === "en" ? "Check your email for the reset link." : "Silakan cek email Anda untuk link reset.");
+      setMessage(lang === "en" ? "Check your email inbox (and spam folder) for the reset link." : "Silakan cek kotak masuk email Anda (dan folder spam) untuk link reset.");
     } else {
       setError(lang === "en" ? "Failed to process request." : "Gagal memproses permintaan.");
     }
@@ -44,8 +44,8 @@ export default function ForgotPassword() {
           <input name="email" type="email" required className="mt-1 h-11 w-full rounded-md border border-neutral-300 px-3 text-sm dark:border-neutral-700 dark:bg-neutral-900" />
         </div>
         
-        {message && <p className="text-sm text-green-600 bg-green-50 p-2 rounded">{message}</p>}
-        {error && <p className="text-sm text-red-600">{error}</p>}
+        {message && <p className="text-sm text-green-600 bg-green-50 p-3 rounded-md border border-green-200">{message}</p>}
+        {error && <p className="text-sm text-red-600 bg-red-50 p-3 rounded-md border border-red-200">{error}</p>}
         
         <Button type="submit" disabled={loading} className="w-full">
           {loading ? "Memproses..." : (lang === "en" ? "Send Reset Link" : "Kirim Link Reset")}

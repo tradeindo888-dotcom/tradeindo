@@ -10,10 +10,11 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Data tidak valid atau password kurang dari 8 karakter." }, { status: 400 });
     }
 
+    // Cari user dengan token tersebut dan pastikan belum expired
     const user = await prisma.user.findFirst({
       where: {
         resetToken: token,
-        resetTokenExpiry: { gt: new Date() }, // Token belum kedaluwarsa
+        resetTokenExpiry: { gt: new Date() }, 
       },
     });
 
@@ -23,17 +24,19 @@ export async function POST(req: Request) {
 
     const hashedPassword = await bcrypt.hash(newPassword, 10);
 
+    // Simpan password baru, dan hapus token agar tidak bisa dipakai lagi
     await prisma.user.update({
       where: { id: user.id },
       data: {
         passwordHash: hashedPassword,
-        resetToken: null,           // Hapus token agar tidak bisa dipakai lagi
+        resetToken: null,
         resetTokenExpiry: null,
       },
     });
 
     return NextResponse.json({ success: true, message: "Password berhasil diubah." });
   } catch (error) {
+    console.error("Reset password error:", error);
     return NextResponse.json({ error: "Terjadi kesalahan sistem" }, { status: 500 });
   }
 }

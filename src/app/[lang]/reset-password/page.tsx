@@ -1,9 +1,10 @@
 "use client";
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import { useParams, useSearchParams, useRouter } from "next/navigation";
+import Link from "next/link";
 import { Button } from "@/components/ui/Button";
 
-export default function ResetPassword() {
+function ResetPasswordForm() {
   const params = useParams();
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -22,7 +23,7 @@ export default function ResetPassword() {
     const confirmPassword = fd.get("confirmPassword");
 
     if (newPassword !== confirmPassword) {
-      setError("Konfirmasi password tidak cocok.");
+      setError(lang === "en" ? "Passwords do not match." : "Konfirmasi password tidak cocok.");
       setLoading(false);
       return;
     }
@@ -35,7 +36,7 @@ export default function ResetPassword() {
 
     setLoading(false);
     if (res.ok) {
-      alert("Password berhasil diubah! Silakan login dengan password baru.");
+      alert(lang === "en" ? "Password updated! Please sign in." : "Password berhasil diubah! Silakan login dengan password baru.");
       router.push(`/${lang}/login`);
     } else {
       const j = await res.json();
@@ -44,7 +45,7 @@ export default function ResetPassword() {
   }
 
   if (!token) {
-    return <div className="p-8 text-center text-red-500">Token tidak ditemukan di URL.</div>;
+    return <div className="p-8 text-center text-red-500">Token tidak ditemukan di URL. Silakan minta link baru.</div>;
   }
 
   return (
@@ -71,5 +72,14 @@ export default function ResetPassword() {
         </Button>
       </form>
     </div>
+  );
+}
+
+// Wrapper Suspense wajib untuk useSearchParams
+export default function ResetPasswordPage() {
+  return (
+    <Suspense fallback={<div className="p-16 text-center">Memuat halaman...</div>}>
+      <ResetPasswordForm />
+    </Suspense>
   );
 }

@@ -149,3 +149,31 @@ export async function sendLoserEmail(
   `;
   return sendBrevoEmail({ email, name }, `Hasil Penawaran - ${rfqTitle}`, html);
 }
+
+// ============================================================
+// 5. EMAIL RESET PASSWORD
+// ============================================================
+export async function sendPasswordResetEmail(email: string, name: string, token: string) {
+  // Pastikan NEXT_PUBLIC_APP_URL diisi di .env / Render Dashboard
+  const resetLink = `${process.env.NEXT_PUBLIC_APP_URL}/id/reset-password?token=${token}`;
+  
+  const html = `
+    <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden;">
+      <div style="background: #14532D; padding: 20px; text-align: center;">
+        <h2 style="color: white; margin: 0;">Trade Indo</h2>
+      </div>
+      <div style="padding: 30px;">
+        <h3>Halo ${name || "Pengguna"},</h3>
+        <p>Kami menerima permintaan untuk mereset password akun Trade Indo Anda.</p>
+        <p>Silakan klik tombol di bawah ini untuk membuat password baru:</p>
+        <div style="text-align: center; margin: 30px 0;">
+          <a href="${resetLink}" style="display: inline-block; padding: 14px 32px; background-color: #14532D; color: white; text-decoration: none; border-radius: 8px; font-weight: bold;">
+            Reset Password
+          </a>
+        </div>
+        <p style="color: #6b7280; font-size: 14px;"><em>Link ini hanya berlaku selama 1 jam. Jika Anda tidak merasa meminta reset password, abaikan saja email ini dan password Anda tidak akan berubah.</em></p>
+      </div>
+    </div>
+  `;
+  return sendBrevoEmail({ email, name }, 'Reset Password Akun Trade Indo', html);
+}

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import crypto from "crypto";
+import { sendPasswordResetEmail } from "@/lib/email";
 
 export async function POST(req: Request) {
   try {
@@ -16,21 +17,18 @@ export async function POST(req: Request) {
     const token = crypto.randomBytes(32).toString("hex");
     const expiry = new Date(Date.now() + 3600000); // 1 jam
 
+    // Simpan token ke database
     await prisma.user.update({
       where: { email },
       data: { resetToken: token, resetTokenExpiry: expiry },
     });
 
-    // SIMULASI PENGIRIMAN EMAIL
-    const resetLink = `http://localhost:3000/id/reset-password?token=${token}`;
-    console.log("\n=========================================");
-    console.log("📧 SIMULASI EMAIL RESET PASSWORD");
-    console.log(`Kepada: ${email}`);
-    console.log(`Link Reset: ${resetLink}`);
-    console.log("=========================================\n");
+    // Kirim Email via Brevo
+    await sendPasswordResetEmail(email, user.name || "", token);
 
     return NextResponse.json({ success: true, message: "Jika email terdaftar, link reset telah dikirim." });
   } catch (error) {
+    console.error("Forgot password error:", error);
     return NextResponse.json({ error: "Terjadi kesalahan sistem" }, { status: 500 });
   }
 }

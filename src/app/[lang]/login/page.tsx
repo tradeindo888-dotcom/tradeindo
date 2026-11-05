@@ -99,9 +99,9 @@ export default function LoginPage() {
           <div className="flex justify-between items-center mb-1">
             <label className="text-sm font-medium block">Password</label>
             <Link href={`/${lang}/forgot-password`} className="text-xs text-forest-700 hover:underline dark:text-lime-400 font-medium">
-              {lang === "en" ? "Forgot password?" : "Lupa password?"}
+             {lang === "en" ? "Forgot password?" : "Lupa password?"}
             </Link>
-          </div>
+        </div>
           <input
             required
             type="password"
