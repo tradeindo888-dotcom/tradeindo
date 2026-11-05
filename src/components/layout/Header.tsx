@@ -19,7 +19,8 @@ export function Header({ lang, t }: { lang: string, t: any }) {
   const role = (session?.user as any)?.role?.toUpperCase();
 
   useEffect(() => {
-    if (!session?.user || role === "ADMIN") return;
+    // HAPUS SYARAT ROLE ADMIN AGAR ADMIN JUGA MENDAPATKAN NOTIFIKASI PESAN
+    if (!session?.user) return;
 
     const fetchUnread = () => {
       fetch("/api/messages/unread-count")
@@ -32,7 +33,7 @@ export function Header({ lang, t }: { lang: string, t: any }) {
     const interval = setInterval(fetchUnread, 15000);
 
     return () => clearInterval(interval);
-  }, [session, pathname, role]);
+  }, [session, pathname]);
 
   if (!mounted) {
     return <div className="h-[106px] bg-white dark:bg-neutral-950 border-b border-neutral-200 dark:border-neutral-800" />;
@@ -46,7 +47,7 @@ export function Header({ lang, t }: { lang: string, t: any }) {
           className="group flex items-center gap-2 transition-all duration-300 hover:scale-105 hover:drop-shadow-md shrink-0 cursor-pointer"
         >
           <img
-            src="/tradeindo.png" // PASTIKAN NAMA FILE DI FOLDER PUBLIC PERSIS SEPERTI INI
+            src="/tradeindo.png"
             alt="Trade Indo Logo"
             className="h-10 w-auto object-contain transition-transform duration-300 group-hover:scale-110"
           />
@@ -64,7 +65,6 @@ export function Header({ lang, t }: { lang: string, t: any }) {
         </form>
 
         <div className="ml-auto flex items-center gap-2">
-          {/* SUSPENSE WAJIB UNTUK LANGUAGETOGGLE AGAR TIDAK HYDRATION ERROR */}
           <Suspense fallback={<div className="h-9 w-16 bg-neutral-200 animate-pulse rounded-md"></div>}>
             <LanguageToggle currentLang={lang} />
           </Suspense>
@@ -80,22 +80,21 @@ export function Header({ lang, t }: { lang: string, t: any }) {
                 </span>
               </div>
 
-              {role !== "ADMIN" && (
-                <Link href={`/${lang}/messages`} className="relative">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="transition-all duration-300 hover:scale-105 hover:shadow-md hover:shadow-forest-700/20 hover:bg-forest-700/10 hover:text-forest-700 dark:hover:bg-lime-400/10 dark:hover:text-lime-400"
-                  >
-                    {lang === "en" ? "Messages" : "Pesan"}
-                  </Button>
-                  {unreadCount > 0 && (
-                    <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white shadow-sm ring-2 ring-white dark:ring-neutral-950 animate-pulse">
-                      {unreadCount > 9 ? "9+" : unreadCount}
-                    </span>
-                  )}
-                </Link>
-              )}
+              {/* TOMBOL PESAN (SEKARANG MUNCUL UNTUK ADMIN JUGA) */}
+              <Link href={`/${lang}/messages`} className="relative">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="transition-all duration-300 hover:scale-105 hover:shadow-md hover:shadow-forest-700/20 hover:bg-forest-700/10 hover:text-forest-700 dark:hover:bg-lime-400/10 dark:hover:text-lime-400"
+                >
+                  {lang === "en" ? "Messages" : "Pesan"}
+                </Button>
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white shadow-sm ring-2 ring-white dark:ring-neutral-950 animate-pulse">
+                    {unreadCount > 9 ? "9+" : unreadCount}
+                  </span>
+                )}
+              </Link>
 
               <Link href={`/${lang}/workspace`}>
                 <Button

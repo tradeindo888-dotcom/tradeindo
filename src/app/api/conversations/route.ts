@@ -4,19 +4,25 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 export async function GET() {
-  try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user) return NextResponse.json([]);
+  const session = await getServerSession(authOptions);
+  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    const companyId = (session.user as any).companyId;
-    const role = (session.user as any).role;
+  let companyId = (session.user as any).companyId;
+  const role = (session.user as any).role;
 
-    // JIKA ADMIN ATAU TIDAK PUNYA COMPANY ID, KEMBALIKAN ARRAY KOSONG
-    if (!companyId || role === "ADMIN") {
-      return NextResponse.json([]);
+  // Jika Admin, cari ID Company "Admin Trade Indo"
+  if (role === "ADMIN") {
+    const adminCompany = await prisma.company.findFirst({ where: { slug: "tradeindo-admin" } });
+    if (adminCompany) {
+      companyId = adminCompany.id;
+    } else {
+      return NextResponse.json([]); // Jika belum ada chat sama sekali
     }
+  }
 
-    // CARI SEMUA PERCAKAPAN DIMANA PERUSAHAAN INI TERLIBAT (BAIK SEBAGAI BUYER MAUPUN SUPPLIER)
+  if (!companyId) return NextResponse.json({ error: "No company" }, { status: 403 });
+
+  try {
     const conversations = await prisma.conversation.findMany({
       where: {
         OR: [
@@ -25,16 +31,18 @@ export async function GET() {
         ],
       },
       include: {
-        buyerCompany: { select: { id: true, name: true } },
-        supplierCompany: { select: { id: true, name: true } },
-        messages: { orderBy: { createdAt: "desc" }, take: 1 },
+        buyerCompany: { select: { name: true } },
+        supplierCompany: { select: { name: true } },
+        messages: {
+          take: 1,
+          orderBy: { createdAt: "desc" },
+        },
       },
       orderBy: { createdAt: "desc" },
     });
-
     return NextResponse.json(conversations);
   } catch (error) {
     console.error("GET /api/conversations error:", error);
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    return NextResponse.json({ error: "Gagal mengambil data" }, { status: 500 });
   }
 }
