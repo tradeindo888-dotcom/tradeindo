@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import Cropper from "react-easy-crop";
 import getCroppedImg from "@/lib/cropImage";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { Button } from "@/components/ui/Button"; // <-- TAMBAHAN IMPORT BUTTON
 
 export default function AdminTabs({ 
   subscriptions, companies, sponsors, users, pendingBanners = [], consumerReports = [], 
