@@ -1,14 +1,11 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import { dict, Locale } from "@/lib/i18n";
 
 // Memaksa Next.js untuk selalu mengambil data terbaru (tanpa cache)
 export const dynamic = "force-dynamic";
 
-export default async function SuppliersPage({ params }: { params: Promise<{ lang: string }> }) {
-  const { lang: rawLang } = await params;
-  const lang = rawLang === "en" ? "en" : "id";
-  const t = dict[lang as Locale];
+export default async function SuppliersPage({ params }: { params: { lang: string } }) {
+  const lang = params.lang === "en" ? "en" : "id";
 
   // Ambil semua perusahaan yang BUKAN Buyer
   const suppliers = await prisma.company.findMany({
@@ -39,15 +36,11 @@ export default async function SuppliersPage({ params }: { params: Promise<{ lang
       
       <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {suppliers.map((s) => (
-          // 1. BUNGKUS SELURUH CARD DENGAN LINK
           <Link href={`/${lang}/suppliers/${s.slug}`} key={s.id} className="group block h-full">
-            
             <article 
-              // 2. EFEK HOVER DI PINDAHKAN KE GROUP-HOVER (Bereaksi saat kotak disentuh)
               className="h-full rounded-md border border-neutral-200 bg-white p-5 dark:border-neutral-800 dark:bg-neutral-900 transition-all duration-300 ease-out group-hover:-translate-y-2 group-hover:shadow-2xl group-hover:ring-4 group-hover:ring-lime-400 group-hover:border-forest-700 dark:group-hover:border-lime-400"
             >
               <div className="flex items-start gap-4">
-                {/* Logo atau Inisial */}
                 <div className="grid h-12 w-12 shrink-0 place-items-center rounded-md bg-forest-700 text-white font-bold overflow-hidden transition-transform duration-300 group-hover:scale-110">
                   {s.logoUrl ? (
                     <img src={s.logoUrl} alt={s.name} className="h-full w-full object-cover" />
@@ -57,12 +50,10 @@ export default async function SuppliersPage({ params }: { params: Promise<{ lang
                 </div>
 
                 <div className="min-w-0">
-                  {/* Nama Perusahaan (Tidak perlu Link lagi karena sudah dibungkus di luar) */}
                   <h3 className="font-semibold line-clamp-1 group-hover:text-forest-700 dark:group-hover:text-lime-400 transition-colors">
                     {s.name}
                   </h3>
                   
-                  {/* Badges */}
                   <div className="mt-1 flex flex-wrap gap-1">
                     {s.verificationStatus === "VERIFIED" && (
                       <span className="rounded-sm bg-forest-700 px-1.5 py-0.5 text-[10px] font-medium text-white">
@@ -77,18 +68,15 @@ export default async function SuppliersPage({ params }: { params: Promise<{ lang
                     </span>
                   </div>
 
-                  {/* Lokasi */}
                   <div className="mt-2 text-xs text-neutral-500">
                     {[s.city, s.province].filter(Boolean).join(", ") || (lang === "en" ? "Location not set" : "Lokasi belum diatur")}
                   </div>
                 </div>
               </div>
             </article>
-            
           </Link>
         ))}
 
-        {/* Tampilan jika kosong */}
         {suppliers.length === 0 && (
           <div className="col-span-full rounded-md border border-dashed p-8 text-center text-neutral-500">
             {lang === "en" ? "No suppliers registered yet." : "Belum ada supplier terdaftar."}
