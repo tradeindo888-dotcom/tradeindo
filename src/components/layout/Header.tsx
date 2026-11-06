@@ -19,7 +19,6 @@ export function Header({ lang, t }: { lang: string, t: any }) {
   const role = (session?.user as any)?.role?.toUpperCase();
 
   useEffect(() => {
-    // HAPUS SYARAT ROLE ADMIN AGAR ADMIN JUGA MENDAPATKAN NOTIFIKASI PESAN
     if (!session?.user) return;
 
     const fetchUnread = () => {
@@ -80,7 +79,6 @@ export function Header({ lang, t }: { lang: string, t: any }) {
                 </span>
               </div>
 
-              {/* TOMBOL PESAN (SEKARANG MUNCUL UNTUK ADMIN JUGA) */}
               <Link href={`/${lang}/messages`} className="relative">
                 <Button
                   variant="ghost"
@@ -96,11 +94,11 @@ export function Header({ lang, t }: { lang: string, t: any }) {
                 )}
               </Link>
 
+              {/* TOMBOL WORKSPACE - DIPERBAIKI */}
               <Link href={`/${lang}/workspace`}>
                 <Button
-                  variant="secondary"
                   size="sm"
-                  className="transition-all duration-300 hover:scale-105 hover:shadow-md hover:shadow-forest-700/20 hover:bg-forest-700 hover:text-white dark:hover:bg-lime-400 dark:hover:text-neutral-900"
+                  className="bg-forest-700 text-white border-none hover:bg-forest-500 hover:scale-105 hover:shadow-md transition-all duration-300"
                 >
                   {t.workspace}
                 </Button>
