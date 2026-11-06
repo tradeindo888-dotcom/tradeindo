@@ -17,7 +17,6 @@ export default function AddProduct() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
-  // CLASS INPUT AGAR TIDAK ABU-ABU DI HP
   const inputClass = "w-full h-11 rounded-md border border-neutral-300 px-3 text-sm bg-white text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-forest-700 focus:border-transparent dark:bg-neutral-800 dark:border-neutral-700 dark:text-white dark:placeholder:text-neutral-500 dark:focus:ring-lime-400";
 
   useEffect(() => {
@@ -67,7 +66,6 @@ export default function AddProduct() {
     const categoryId = String(fd.get("categoryId") || "");
     const category = categories.find(c => c.id === categoryId);
     
-    // Validasi Kata Kunci Kategori
     if (category) {
       const validation = validateCategoryChoice(title, category.slug);
       if (validation.isWarning) {
@@ -80,13 +78,12 @@ export default function AddProduct() {
       }
     }
     
-    // Konfirmasi Sebelum Simpan
     const confirmMessage = 
       `Simpan produk dengan detail berikut?\n\n` +
       `📦 Nama Produk: ${title}\n` +
       `📂 Kategori: ${category ? CATEGORY_NAMES[category.slug] : "-"}\n` +
-      `💰 Harga: Rp ${Number(fd.get("priceMin") || 0).toLocaleString("id-ID")}\n` +
-      `📊 MOQ: ${fd.get("moq")} ${fd.get("moqUnit")}\n` +
+      `💰 Harga: ${fd.get("priceMin") ? `Rp ${Number(fd.get("priceMin")).toLocaleString("id-ID")}` : "Nego"}\n` +
+      `📊 MOQ: ${fd.get("moq") ? `${fd.get("moq")} ${fd.get("moqUnit")}` : "Nego"}\n` +
       `🖼️ Gambar: ${images.length} file`;
     
     if (!window.confirm(confirmMessage)) return;
@@ -148,8 +145,10 @@ export default function AddProduct() {
         
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="text-sm font-medium block mb-1">MOQ</label>
-            <input name="moq" type="number" min={1} required className={inputClass} placeholder="10" />
+            <label className="text-sm font-medium block mb-1">
+              MOQ <span className="text-xs text-neutral-500 font-normal">(Opsional)</span>
+            </label>
+            <input name="moq" type="number" min={1} className={inputClass} placeholder="Kosongkan = Nego" />
           </div>
           <div>
             <label className="text-sm font-medium block mb-1">{lang === "en" ? "Unit" : "Satuan"}</label>
@@ -158,8 +157,11 @@ export default function AddProduct() {
         </div>
         
         <div>
-          <label className="text-sm font-medium block mb-1">{lang === "en" ? "Indicative Price (Rp)" : "Harga Indikatif (Rp)"}</label>
-          <input name="priceMin" type="number" className={inputClass} placeholder="50000" />
+          <label className="text-sm font-medium block mb-1">
+            {lang === "en" ? "Indicative Price (Rp)" : "Harga Indikatif (Rp)"} 
+            <span className="text-xs text-neutral-500 font-normal"> (Opsional)</span>
+          </label>
+          <input name="priceMin" type="number" className={inputClass} placeholder="Kosongkan = Hubungi Supplier" />
         </div>
 
         <div className="rounded-md border border-dashed border-neutral-300 p-4 dark:border-neutral-700">

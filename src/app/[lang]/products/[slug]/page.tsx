@@ -24,7 +24,6 @@ export default async function ProductDetail({
         company: true, 
         category: true, 
         images: true,
-        // TAMBAHKAN INI UNTUK MEMBACA TIER SPONSOR
         sponsoredRequests: {
           where: { status: "APPROVED", expiresAt: { gt: now } },
           select: { tier: true },
@@ -46,13 +45,11 @@ export default async function ProductDetail({
   return (
     <div className="mx-auto grid max-w-content gap-6 px-4 py-8 lg:grid-cols-[260px_1fr]">
       
-      {/* Tracker untuk mencatat View */}
       <ProductViewTracker
         productId={product.id}
         sponsoredUntil={product.sponsoredUntil?.toISOString() ?? null}
       />
 
-      {/* SIDEBAR KATEGORI (KIRI) */}
       <aside className="space-y-4">
         <div className="rounded-md border border-neutral-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-900">
           <div className="mb-2 text-sm font-semibold">{t.featuredCategories}</div>
@@ -68,10 +65,8 @@ export default async function ProductDetail({
         </div>
       </aside>
 
-      {/* KONTEN DETAIL PRODUK (KANAN) */}
       <div className="grid gap-8 lg:grid-cols-[1fr_360px]">
         
-        {/* Kolom Kiri: Gambar & Detail */}
         <div>
           <div className="aspect-[4/3] w-full overflow-hidden rounded-md bg-neutral-100 dark:bg-neutral-800 mb-6">
             <img
@@ -81,7 +76,6 @@ export default async function ProductDetail({
             />
           </div>
           
-          {/* LOGIKA BADGE DINAMIS */}
           {sponsored && (
             <span className={`inline-block mb-2 rounded-sm px-2 py-1 text-xs font-bold ${
               isHomepage ? "bg-amber-400 text-amber-950" :
@@ -100,21 +94,25 @@ export default async function ProductDetail({
           </div>
           <p className="mt-6 text-neutral-700 dark:text-neutral-300">{product.description}</p>
           
+          {/* LOGIKA TAMPILAN NEGO DETAIL PRODUK */}
           <div className="mt-6 grid grid-cols-2 gap-4 text-sm">
             <div className="rounded-md border border-neutral-200 p-3 dark:border-neutral-800">
               <div className="text-neutral-500">MOQ</div>
-              <div className="font-semibold">{product.moq} {product.moqUnit}</div>
+              <div className="font-semibold">
+                {product.moq ? `${product.moq} ${product.moqUnit}` : "Nego"}
+              </div>
             </div>
             <div className="rounded-md border border-neutral-200 p-3 dark:border-neutral-800">
               <div className="text-neutral-500">{lang === "en" ? "Indicative Price" : "Harga indikatif"}</div>
               <div className="font-semibold tabular-nums">
-                {product.priceMin ? `Rp ${product.priceMin.toLocaleString("id-ID")}+` : (lang === "en" ? "Contact Supplier" : "Hubungi supplier")}
+                {product.priceMin 
+                  ? `Rp ${product.priceMin.toLocaleString("id-ID")}+` 
+                  : (lang === "en" ? "Negotiable" : "Nego")}
               </div>
             </div>
           </div>
         </div>
 
-        {/* Kolom Kanan: Sidebar Supplier */}
         <aside className="space-y-4 lg:sticky lg:top-24 lg:self-start">
           <div className="rounded-md border border-neutral-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-900">
             <div className="text-sm text-neutral-500">Supplier</div>

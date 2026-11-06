@@ -144,10 +144,13 @@ model Product {
   titleEn        String
   slug           String        @unique
   description    String?
-  moq            Int           @default(1)
-  moqUnit        String        @default("pcs")
+  
+  // UBAH MENJADI OPSIONAL (TAMBAHKAN TANDA ?)
+  moq            Int?          
+  moqUnit        String?       @default("pcs") 
   priceMin       Int?
   priceMax       Int?
+  
   currency       String        @default("IDR")
   status         ProductStatus @default(ACTIVE)
   images         ProductImage[]
@@ -163,7 +166,6 @@ model Product {
   sponsoredRequests SponsoredRequest[]
   productEvents     ProductEvent[]
   
-
   @@index([sponsoredUntil])
   @@index([status, createdAt])
   @@index([companyId, status])

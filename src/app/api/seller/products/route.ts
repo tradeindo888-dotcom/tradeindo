@@ -9,12 +9,14 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Hanya Supplier yang dapat menambah produk" }, { status: 403 });
   }
 
-  // --- TAMBAHKAN KODE INI ---
+  const companyId = (session.user as any).companyId;
+
+  // Cek batas produk
   const company = await prisma.company.findUnique({
-    where: { id: (session.user as any).companyId }
+    where: { id: companyId }
   });
   const productCount = await prisma.product.count({
-    where: { companyId: (session.user as any).companyId }
+    where: { companyId }
   });
   const limits = { FREE: 10, PRO: 100, PREMIUM: 500, ENTERPRISE: 99999 };
   const limit = limits[company?.plan as keyof typeof limits || "FREE"];
@@ -24,31 +26,32 @@ export async function POST(req: Request) {
       error: `Batas listing paket ${company?.plan} Anda (${limit} produk) telah tercapai. Silakan upgrade paket.` 
     }, { status: 403 });
   }
-  // ---------------------------
 
   const body = await req.json().catch(() => null);
-  if (!body?.title || !body?.moq) {
-    return NextResponse.json({ error: "Judul dan MOQ wajib diisi" }, { status: 400 });
+  if (!body?.title) {
+    return NextResponse.json({ error: "Judul wajib diisi" }, { status: 400 });
   }
 
-  // Ambil categoryId dari form, kalau kosong baru ambil yang pertama
   const categoryId = body.categoryId || (await prisma.category.findFirst())?.id;
 
   const slug = body.title.toLowerCase().replace(/[^a-z0-9]+/g, "-") + "-" + Date.now().toString(36);
 
+  // LOGIKA NEGO: Jika kosong, jadikan null
+  const moq = body.moq ? Number(body.moq) : null;
+  const priceMin = body.priceMin ? Number(body.priceMin) : null;
+
   const product = await prisma.product.create({
     data: {
-      companyId: (session.user as any).companyId,
+      companyId: companyId,
       categoryId: categoryId,
       titleId: body.title,
       titleEn: body.title,
       slug,
       description: body.description || null,
-      moq: Number(body.moq),
+      moq: moq, // Simpan hasil (null atau angka)
       moqUnit: body.moqUnit || "pcs",
-      priceMin: body.priceMin ? Number(body.priceMin) : null,
+      priceMin: priceMin,
       
-      // Simpan gambar ke tabel ProductImage
       images: {
         create: (body.images || []).map((url: string) => ({ url }))
       }
