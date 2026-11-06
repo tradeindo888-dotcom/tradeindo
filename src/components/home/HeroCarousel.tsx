@@ -22,7 +22,7 @@ export default function HeroCarousel({ lang }: { lang: string }) {
 
   // 2. Efek Ganti Gambar Otomatis (Setiap 5 detik)
   useEffect(() => {
-    if (banners.length <= 1) return; // Jika cuma 1 banner, tidak perlu ganti-ganti
+    if (banners.length <= 1) return; 
     
     const interval = setInterval(() => {
       setCurrentIndex((prev) => (prev + 1) % banners.length);
@@ -67,16 +67,17 @@ export default function HeroCarousel({ lang }: { lang: string }) {
         );
       })}
 
-      {/* Tombol Navigasi (Panah Kiri & Kanan) - SELALU TERLIHAT */}
+      {/* Tombol Navigasi (Panah Kiri & Kanan) - TRANSPARAN */}
       {banners.length > 1 && (
         <>
           {/* Tombol Prev (Kiri) */}
           <button
             onClick={() => setCurrentIndex((prev) => (prev === 0 ? banners.length - 1 : prev - 1))}
-            className="absolute left-3 top-1/2 -translate-y-1/2 z-20 bg-black/40 hover:bg-black/70 text-white rounded-full p-2.5 shadow-lg transition-all duration-300 backdrop-blur-sm opacity-80 hover:opacity-100"
+            className="absolute left-3 top-1/2 -translate-y-1/2 z-20 bg-transparent text-white p-2 transition-all duration-300 hover:scale-125 opacity-70 hover:opacity-100 focus:outline-none"
             aria-label="Previous Banner"
           >
-            <svg className="w-5 h-5 md:w-6 md:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            {/* Ikon diberi drop-shadow agar tetap terlihat di gambar terang */}
+            <svg className="w-8 h-8 md:w-10 md:h-10 drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
             </svg>
           </button>
@@ -84,10 +85,11 @@ export default function HeroCarousel({ lang }: { lang: string }) {
           {/* Tombol Next (Kanan) */}
           <button
             onClick={() => setCurrentIndex((prev) => (prev + 1) % banners.length)}
-            className="absolute right-3 top-1/2 -translate-y-1/2 z-20 bg-black/40 hover:bg-black/70 text-white rounded-full p-2.5 shadow-lg transition-all duration-300 backdrop-blur-sm opacity-80 hover:opacity-100"
+            className="absolute right-3 top-1/2 -translate-y-1/2 z-20 bg-transparent text-white p-2 transition-all duration-300 hover:scale-125 opacity-70 hover:opacity-100 focus:outline-none"
             aria-label="Next Banner"
           >
-            <svg className="w-5 h-5 md:w-6 md:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            {/* Ikon diberi drop-shadow agar tetap terlihat di gambar terang */}
+            <svg className="w-8 h-8 md:w-10 md:h-10 drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
             </svg>
           </button>
