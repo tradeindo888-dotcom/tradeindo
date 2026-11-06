@@ -40,6 +40,7 @@ export default async function SupplierProfile({
 
   return (
     <div className="mx-auto max-w-content px-4 py-8">
+      {/* Tracker untuk mencatat kunjungan profil */}
       <ProfileViewTracker supplierCompanyId={company.id} />
 
       {/* HEADER PROFIL PERUSAHAAN */}
@@ -149,7 +150,10 @@ export default async function SupplierProfile({
               const isCategory = activeTier === "CATEGORY";
               
               const isDiscountActive = p.discountLabel && p.discountUntil && new Date(p.discountUntil) > new Date();
-              const displayDiscount = isDiscountActive ? (p.discountLabel.includes('%') ? p.discountLabel : `${p.discountLabel}%`) : null;
+              // PERBAIKAN TYPESCRIPT: Tambahkan pengecekan p.discountLabel di dalam ternary
+              const displayDiscount = (isDiscountActive && p.discountLabel) 
+                ? (p.discountLabel.includes('%') ? p.discountLabel : `${p.discountLabel}%`) 
+                : null;
 
               let cardStyle = "border border-neutral-200 dark:border-neutral-800 hover:ring-2 hover:ring-lime-400 hover:border-forest-700 dark:hover:border-lime-400";
               if (isHomepage || isCategory) {
