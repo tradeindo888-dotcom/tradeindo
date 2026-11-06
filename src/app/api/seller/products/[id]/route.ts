@@ -28,20 +28,11 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     return NextResponse.json({ error: "Produk tidak ditemukan atau bukan milik Anda" }, { status: 404 });
   }
 
-  // HAPUS GAMBAR LAMA YANG DIPILIH
-  if (body.deletedImages && body.deletedImages.length > 0) {
-    await prisma.productImage.deleteMany({
-      where: {
-        id: { in: body.deletedImages },
-        productId: id,
-      },
-    });
-  }
-
   // LOGIKA NEGO: Jika kosong, jadikan null
   const moq = body.moq ? Number(body.moq) : null;
   const priceMin = body.priceMin ? Number(body.priceMin) : null;
 
+  // Proses Update ke Database
   const updated = await prisma.product.update({
     where: { id },
     data: {
@@ -49,13 +40,21 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       titleId: body.title,
       titleEn: body.title,
       description: body.description || null,
-      moq: moq, // Simpan hasil (null atau angka)
+      moq: moq,
       moqUnit: body.moqUnit || "pcs",
       priceMin: priceMin,
-      images: body.newImages && body.newImages.length > 0 ? {
-        create: body.newImages.map((url: string) => ({ url }))
-      } : undefined
+      
+      // Logika Gambar:
+      images: {
+        // 1. Hapus gambar yang dicentang untuk dihapus
+        deleteMany: {
+          id: { in: body.deletedImages || [] }
+        },
+        // 2. Tambahkan URL gambar baru hasil upload
+        create: (body.newImages || []).map((url: string) => ({ url }))
+      }
     },
+    include: { images: true } // Kembalikan data terbaru termasuk gambar
   });
 
   return NextResponse.json(updated);
