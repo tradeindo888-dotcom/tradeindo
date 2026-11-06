@@ -115,8 +115,9 @@ export default function AnalyticsPage() {
                 <YAxis tick={{ fontSize: 12 }} />
                 <Tooltip />
                 <Legend />
-                <Line type="monotone" dataKey="views" name="Dilihat" stroke="#14532D" strokeWidth={3} dot={false} />
-                <Line type="monotone" dataKey="clicks" name="Diklik" stroke="#A3E635" strokeWidth={3} dot={false} />
+                {/* PERUBAHAN WARNA DI SINI: Biru untuk Dilihat, Merah untuk Diklik */}
+                <Line type="monotone" dataKey="views" name="Dilihat" stroke="#2563eb" strokeWidth={3} dot={false} />
+                <Line type="monotone" dataKey="clicks" name="Diklik" stroke="#ef4444" strokeWidth={3} dot={false} />
               </LineChart>
             </ResponsiveContainer>
           </div>
@@ -212,7 +213,6 @@ export default function AnalyticsPage() {
         </div>
 
         <div className="rounded-xl border bg-white p-5 shadow-sm dark:border-neutral-800 dark:bg-neutral-900">
-          {/* PERUBAHAN TEKS JUDUL DI SINI */}
           <h2 className="font-bold text-lg mb-4">📍 Asal Customer (Melihat Produk)</h2>
           <div className="space-y-4">
             {data.topProvinces.map((p: any, idx: number) => (
