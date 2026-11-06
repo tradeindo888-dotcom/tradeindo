@@ -94,7 +94,7 @@ export default async function ProductDetail({
           </div>
           <p className="mt-6 text-neutral-700 dark:text-neutral-300">{product.description}</p>
           
-          {/* LOGIKA TAMPILAN NEGO DETAIL PRODUK */}
+          {/* LOGIKA NEGO YANG SUDAH BERSIH */}
           <div className="mt-6 grid grid-cols-2 gap-4 text-sm">
             <div className="rounded-md border border-neutral-200 p-3 dark:border-neutral-800">
               <div className="text-neutral-500">MOQ</div>

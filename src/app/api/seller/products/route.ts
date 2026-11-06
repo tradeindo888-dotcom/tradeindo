@@ -33,7 +33,6 @@ export async function POST(req: Request) {
   }
 
   const categoryId = body.categoryId || (await prisma.category.findFirst())?.id;
-
   const slug = body.title.toLowerCase().replace(/[^a-z0-9]+/g, "-") + "-" + Date.now().toString(36);
 
   // LOGIKA NEGO: Jika kosong, jadikan null
@@ -48,10 +47,9 @@ export async function POST(req: Request) {
       titleEn: body.title,
       slug,
       description: body.description || null,
-      moq: moq, // Simpan hasil (null atau angka)
+      moq: moq, 
       moqUnit: body.moqUnit || "pcs",
       priceMin: priceMin,
-      
       images: {
         create: (body.images || []).map((url: string) => ({ url }))
       }
