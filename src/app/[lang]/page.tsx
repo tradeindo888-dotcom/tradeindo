@@ -6,6 +6,7 @@ import { dict, Locale } from "@/lib/i18n";
 import { isCurrentlySponsored } from "@/lib/product-utils";
 import HeroCarousel from "@/components/home/HeroCarousel";
 
+// FUNGSI IKON KATEGORI
 const getCategoryIcon = (slug: string) => {
   const iconClass = "w-4 h-4 text-forest-600 dark:text-lime-400 group-hover:text-white transition-colors";
   switch (slug) {
@@ -52,7 +53,10 @@ export default function HomePage() {
       }).catch(console.error);
   }, [isClient]);
 
-  if (!isClient) return null;
+  if (!isClient) {
+    // Tampilan skeleton singkat sebelum client siap
+    return <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950 flex items-center justify-center">Memuat halaman...</div>;
+  }
 
   const trackClick = (productId: string) => {
     fetch("/api/track", {
@@ -65,7 +69,7 @@ export default function HomePage() {
   return (
     <div className="pb-12">
       
-      {/* MEMAKSA KETIGA KOLOM MEMILIKI TINGGI YANG SAMA (400px) */}
+      {/* TOP SECTION: KATEGORI, CAROUSEL, PROMO */}
       <div className="mx-auto max-w-content px-4 py-4 grid grid-cols-1 lg:grid-cols-[260px_1fr_280px] gap-6 items-stretch lg:h-[400px]">
         
         {/* 1. Sidebar Kategori */}
@@ -106,7 +110,7 @@ export default function HomePage() {
 
       </div>
 
-      {/* SPOTLIGHT SECTION - SUDAH TIDAK ADA MT-4 DAN PY-6 */}
+      {/* SPOTLIGHT SECTION */}
       {spotlightProducts.length > 0 && (
         <section className="bg-gradient-to-r from-amber-500/5 via-amber-400/10 to-amber-500/5 py-6 border-b border-amber-400/30">
           <div className="mx-auto max-w-content px-4">
@@ -124,7 +128,7 @@ export default function HomePage() {
                     <div className="absolute top-3 left-3 z-10 rounded-full bg-gradient-to-r from-amber-300 to-yellow-500 px-3 py-1 text-[11px] font-bold text-amber-950 shadow-md border border-amber-200 flex items-center gap-1">👑 {lang === "en" ? "PREMIUM" : "PREMIUM"}</div>
                     {displayDiscount && (
                       <div className="absolute top-3 right-3 z-10 flex items-center gap-1 rounded-bl-lg rounded-tr-lg rounded-tl-sm rounded-br-sm bg-gradient-to-r from-red-600 to-rose-500 px-2 py-0.5 text-[10px] font-bold text-white shadow-lg shadow-red-500/40 transform -rotate-2 group-hover:rotate-0 transition-transform">
-                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2H2v10l9.29 9.29c.94.94 2.48.94 3.42 0l6.58-6.58c.94-.94.94-2.48 0-3.42L12 2Z"/><path d="M7 7h.01"/></svg>{displayDiscount}
+                        {displayDiscount}
                       </div>
                     )}
                     <div className="aspect-[4/3] w-full bg-neutral-100 dark:bg-neutral-800 overflow-hidden">
@@ -133,7 +137,11 @@ export default function HomePage() {
                     <div className="p-4 bg-gradient-to-t from-white to-transparent dark:from-neutral-900 dark:to-transparent">
                       <h3 className="font-bold text-base text-forest-900 dark:text-white line-clamp-1 group-hover:text-forest-700 dark:group-hover:text-amber-400 transition-colors">{lang === "en" ? p.titleEn : p.titleId}</h3>
                       <p className="text-sm text-neutral-500 mt-1">{p.company?.name}</p>
-                      <div className="mt-3 font-semibold text-forest-700 dark:text-amber-400">{p.priceMin ? `Mulai Rp ${p.priceMin.toLocaleString("id-ID")}` : "Hubungi Supplier"}</div>
+                      
+                      {/* LOGIKA NEGO DI SPOTLIGHT */}
+                      <div className="mt-3 font-semibold text-forest-700 dark:text-amber-400">
+                        {p.priceMin ? `Mulai Rp ${p.priceMin.toLocaleString("id-ID")}` : "Nego"}
+                      </div>
                     </div>
                   </Link>
                 );
@@ -160,6 +168,7 @@ export default function HomePage() {
             const isCategory = activeTier === "CATEGORY";
             const isDiscountActive = p.discountLabel && p.discountUntil && new Date(p.discountUntil) > new Date();
             const displayDiscount = isDiscountActive ? (p.discountLabel.includes('%') ? p.discountLabel : `${p.discountLabel}%`) : null;
+            
             let cardStyle = "border border-neutral-200 dark:border-neutral-800 hover:ring-2 hover:ring-lime-400 hover:border-forest-700 dark:hover:border-lime-400";
             if (isHomepage || isCategory) {
               cardStyle = "border-2 border-lime-500 ring-2 ring-lime-400 shadow-lg hover:ring-4 hover:border-forest-700 dark:hover:border-lime-400";
@@ -170,7 +179,7 @@ export default function HomePage() {
                 <Link href={`/${lang}/products/${p.slug}`} className="block overflow-hidden relative" onClick={() => trackClick(p.id)}>
                   {displayDiscount && (
                     <div className="absolute top-2 right-2 z-20 flex items-center gap-1 rounded-bl-lg rounded-tr-lg rounded-tl-sm rounded-br-sm bg-gradient-to-r from-red-600 to-rose-500 px-2 py-0.5 text-[11px] font-bold text-white shadow-lg shadow-red-500/40 transform -rotate-2 group-hover:rotate-0 transition-transform">
-                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2H2v10l9.29 9.29c.94.94 2.48.94 3.42 0l6.58-6.58c.94-.94.94-2.48 0-3.42L12 2Z"/><path d="M7 7h.01"/></svg>{displayDiscount}
+                      {displayDiscount}
                     </div>
                   )}
                   {!displayDiscount && promoLabel && (
@@ -188,9 +197,17 @@ export default function HomePage() {
                   )}
                   <Link href={`/${lang}/products/${p.slug}`} className="text-sm font-medium group-hover:text-forest-700 dark:group-hover:text-lime-400 line-clamp-2 transition-colors" onClick={() => trackClick(p.id)}>{lang === "en" ? p.titleEn : p.titleId}</Link>
                   <div className="mt-1 text-xs text-neutral-600 dark:text-neutral-400">{p.company?.name}</div>
+                  
+                  {/* LOGIKA NEGO DI PRODUK UTAMA */}
                   <div className="mt-2 flex items-center justify-between">
-                    <span className="text-xs text-neutral-500">MOQ {p.moq} {p.moqUnit}</span>
-                    {p.priceMin && <span className="text-sm font-semibold tabular-nums text-forest-700 dark:text-lime-400">Rp {p.priceMin.toLocaleString("id-ID")}+</span>}
+                    <span className="text-xs text-neutral-500">
+                      MOQ {p.moq ? `${p.moq} ${p.moqUnit}` : "Nego"}
+                    </span>
+                    {p.priceMin ? (
+                      <span className="text-sm font-semibold tabular-nums text-forest-700 dark:text-lime-400">Rp {p.priceMin.toLocaleString("id-ID")}+</span>
+                    ) : (
+                      <span className="text-sm font-semibold text-forest-700 dark:text-lime-400">Nego</span>
+                    )}
                   </div>
                 </div>
               </article>

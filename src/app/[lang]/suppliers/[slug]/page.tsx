@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { isCurrentlySponsored } from "@/lib/product-utils";
-import { ProfileViewTracker } from "@/components/supplier/ProfileViewTracker"; // <-- IMPORT
+import { ProfileViewTracker } from "@/components/supplier/ProfileViewTracker";
 
 export default async function SupplierProfile({ 
   params 
@@ -39,14 +39,10 @@ export default async function SupplierProfile({
 
   return (
     <div className="mx-auto max-w-content px-4 py-8">
-      
-      {/* TAMBAHKAN TRACKER DISINI */}
       <ProfileViewTracker supplierCompanyId={company.id} />
 
-      {/* HEADER PROFIL PERUSAHAAN */}
       <div className="rounded-md border border-neutral-200 bg-white p-6 dark:border-neutral-800 dark:bg-neutral-900">
         <div className="flex flex-col sm:flex-row sm:items-start gap-6">
-          {/* Logo Perusahaan */}
           <div className="flex h-24 w-40 shrink-0 items-center justify-center rounded-md border border-neutral-200 bg-white overflow-hidden dark:border-neutral-700">
             {company.logoUrl ? (
               <img src={company.logoUrl} alt={company.name} className="h-full w-full object-contain p-2" />
@@ -54,8 +50,6 @@ export default async function SupplierProfile({
               <span className="text-2xl font-bold text-forest-700">{company.name.slice(0, 2).toUpperCase()}</span>
             )}
           </div>
-
-          {/* Info Utama */}
           <div className="flex-1">
             <div className="flex flex-wrap items-center gap-2">
               <h1 className="font-display text-2xl font-bold">{company.name}</h1>
@@ -68,58 +62,10 @@ export default async function SupplierProfile({
             <div className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">
               {company.type} · {[company.city, company.province].filter(Boolean).join(", ")}
             </div>
-            {company.exportCapability && (
-              <div className="mt-2 text-sm text-forest-700 dark:text-lime-400 font-medium">
-                {lang === "en" ? "Capable of Export" : "Mampu Melayani Ekspor"}
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Tentang */}
-        <div className="mt-8 border-t border-neutral-200 pt-4 dark:border-neutral-800">
-          <h2 className="text-sm font-semibold mb-2">{lang === "en" ? "About Company" : "Tentang Perusahaan"}</h2>
-          <p className="text-sm text-neutral-700 dark:text-neutral-300">
-            {company.description || (lang === "en" ? "No description provided." : "Belum ada deskripsi profil perusahaan.")}
-          </p>
-        </div>
-
-        {/* Info Detail */}
-        <div className="mt-6 border-t border-neutral-200 pt-4 dark:border-neutral-800 grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-          <div>
-            <div className="text-neutral-500">{lang === "en" ? "Year Established" : "Tahun Berdiri"}</div>
-            <div className="font-semibold">{company.yearEstablished || "-"}</div>
-          </div>
-          <div>
-            <div className="text-neutral-500">Website</div>
-            <div className="font-semibold">
-              {company.website ? (
-                <a href={company.website} target="_blank" rel="noopener noreferrer" className="text-forest-700 hover:underline dark:text-lime-400">
-                  {company.website}
-                </a>
-              ) : "-"}
-            </div>
-          </div>
-          <div>
-            <div className="text-neutral-500">{lang === "en" ? "Business Type" : "Tipe Bisnis"}</div>
-            <div className="font-semibold">{company.type}</div>
-          </div>
-          <div>
-            <div className="text-neutral-500">{lang === "en" ? "Location" : "Lokasi"}</div>
-            <div className="font-semibold">{[company.city, company.province].filter(Boolean).join(", ") || "-"}</div>
-          </div>
-          <div>
-            <div className="text-neutral-500">{lang === "en" ? "Address" : "Alamat"}</div>
-            <div className="font-semibold">{company.address || "-"}</div>
-          </div>
-          <div>
-            <div className="text-neutral-500">{lang === "en" ? "Phone" : "Telepon"}</div>
-            <div className="font-semibold">{company.phone || "-"}</div>
           </div>
         </div>
       </div>
 
-      {/* KATALOG PRODUK */}
       <div className="mt-8">
         <h2 className="font-display text-xl font-bold mb-4">{lang === "en" ? "Product Catalog" : "Katalog Produk"} ({company.products.length})</h2>
         {company.products.length === 0 ? (
@@ -157,17 +103,27 @@ export default async function SupplierProfile({
                         isCategory ? "bg-forest-700 text-white" : 
                         "bg-lime-300 text-neutral-900"
                       }`}>
-                        {isHomepage ? "👑 PREMIUM" :
-                         isCategory ? "✨ SPOTLIGHT" :
-                         "⭐ " + (lang === "en" ? "SPONSORED" : "BERSPONSOR")}
+                        {isHomepage ? "👑 PREMIUM" : isCategory ? "✨ SPOTLIGHT" : "⭐ " + (lang === "en" ? "SPONSORED" : "BERSPONSOR")}
                       </span>
                     )}
                     <Link href={`/${lang}/products/${p.slug}`} className="font-medium group-hover:text-forest-700 dark:group-hover:text-lime-400 line-clamp-2 transition-colors">
                       {lang === "en" ? p.titleEn : p.titleId}
                     </Link>
+                    
+                    {/* LOGIKA NEGO DI PROFIL SUPPLIER */}
                     <div className="mt-3 flex items-center justify-between">
-                      <span className="text-sm text-neutral-500">MOQ {p.moq} {p.moqUnit}</span>
-                      {p.priceMin && <span className="font-semibold tabular-nums text-forest-700 dark:text-lime-400">Rp {p.priceMin.toLocaleString("id-ID")}+</span>}
+                      <span className="text-sm text-neutral-500">
+                        MOQ {p.moq ? `${p.moq} ${p.moqUnit}` : "Nego"}
+                      </span>
+                      {p.priceMin ? (
+                        <span className="font-semibold tabular-nums text-forest-700 dark:text-lime-400">
+                          Rp {p.priceMin.toLocaleString("id-ID")}+
+                        </span>
+                      ) : (
+                        <span className="font-semibold text-forest-700 dark:text-lime-400">
+                          Nego
+                        </span>
+                      )}
                     </div>
                   </div>
                 </article>
